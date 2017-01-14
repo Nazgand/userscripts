@@ -175,7 +175,13 @@ function addLinkToPage(page) {
 
 function main() {
   findCheckedPage()
-    .then(addLinkToPage)
+    .then(function(page) {
+      const currentPageNumber = getCurrentPageNumber();
+
+      if (page !== currentPageNumber) {
+        addLinkToPage(page);
+      }
+    })
     .catch(function(err) {
       console.error(err.message);
     });
