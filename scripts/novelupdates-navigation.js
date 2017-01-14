@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NovelUpdates Series Navigation
 // @namespace   novelupdates.series
-// @version     1
+// @version     3
 // @include     http://www.novelupdates.com/series/*
 // @include     https://www.novelupdates.com/series/*
 // @grant       none
@@ -9,79 +9,6 @@
 
 function isLoggedIn() {
   return !document.querySelector('[href*="/login"]');
-}
-
-function getSeriesUrl() {
-  const link = document.querySelector('[rel="canonical"]');
-  const { href } = link;
-
-  return href;
-}
-
-function getSlug() {
-  const seriesUrl = getSeriesUrl();
-
-  const m = seriesUrl.match(/series\/([^/]+)/);
-  if (!m) {
-    return null;
-  }
-
-  const slug = m[1];
-
-  return slug;
-}
-
-function getStatus(slug) {
-  return new Promise(function(resolve, reject) {
-    if (typeof slug !== 'string') {
-      throw new Error('slug must be text');
-    }
-
-    const xhr = new XMLHttpRequest();
-
-    xhr.onload = function() {
-      const { response } = this;
-
-      const seriesLink = response.querySelector(
-        '.rl_links a[href*="' + slug + '"]'
-      );
-      if (!seriesLink) {
-        return resolve(null);
-      }
-
-      const statusContainer = seriesLink
-        .closest('.rl_links')
-        .querySelector('.chp-release');
-
-      if (!statusContainer) {
-        const err = new Error('could not get series status');
-
-        return reject(err);
-      }
-
-      const status = statusContainer.textContent.trim();
-      if (!status) {
-        const err = new Error('invalid status');
-
-        return reject(err);
-      }
-
-      return resolve(status);
-    };
-
-    xhr.onerror = function() {
-      const err = new Error('could not retrieve status');
-
-      return reject(err);
-    };
-
-    xhr.open('GET', '/reading-list/');
-    xhr.responseType = 'document';
-
-    console.log('Getting status from user\'s reading list');
-
-    xhr.send();
-  });
 }
 
 function getLastPageNumber() {
@@ -102,57 +29,6 @@ function getLastPageNumber() {
   return lastPageNumber;
 }
 
-function getChaptersFromDocument(document) {
-  const chapters = Array.from(
-    document.querySelectorAll('.chp-release')
-  ).map(function(el) {
-    return el.textContent.trim();
-  });
-
-  return chapters;
-}
-
-function getPageChapters(pageNumber) {
-  return new Promise(function(resolve, reject) {
-    if (typeof pageNumber !== 'number') {
-      throw new Error('pageNumber must be number');
-    }
-    if (isNaN(pageNumber) || Math.floor(pageNumber) !== Math.ceil(pageNumber)) {
-      throw new Error('invalid page number');
-    }
-
-    const currentPageNumber = getCurrentPageNumber();
-    if (pageNumber === currentPageNumber) {
-      const chapters = getChaptersFromDocument(document);
-
-      resolve(chapters);
-
-      return;
-    }
-
-    const xhr = new XMLHttpRequest();
-
-    xhr.onload = function() {
-      const { response } = this;
-
-      const chapters = getChaptersFromDocument(response);
-
-      return resolve(chapters);
-    };
-
-    xhr.onerror = function() {
-      const err = new Error('could not load page ' + pageNumber);
-
-      return reject(err);
-    };
-
-    xhr.open('GET', window.location.pathname + '?pg=' + pageNumber);
-    xhr.responseType = 'document';
-
-    xhr.send();
-  });
-}
-
 function getCurrentPageNumber() {
   const currentPageWrapper = document.querySelector(
     '.digg_pagination .current'
@@ -169,14 +45,58 @@ function getCurrentPageNumber() {
   return currentPageNumber;
 }
 
-function findStatusPage(status) {
+function getLessEqualGreatDocument(document) {
+  if(document.querySelector('tr[class^="colorme"]')!==null){
+    return 0;
+  }else if(document.querySelector('tr[class^="newcolorme"]')!==null){
+    return -1;
+  }else if(document.querySelector('tr[class^="readcolor"]')!==null){
+    return 1;
+  }
+  console.log("wtf error");
+  return 2;
+}
+
+function getPageLessEqualGreat(pageNumber) {
   return new Promise(function(resolve, reject) {
-    if (typeof status !== 'string') {
-      throw new Error('status must be string');
+    if (typeof pageNumber !== 'number') {
+      throw new Error('pageNumber must be number');
+    }
+    if (isNaN(pageNumber) || Math.floor(pageNumber) !== Math.ceil(pageNumber)) {
+      throw new Error('invalid page number');
     }
 
+    if (pageNumber === getCurrentPageNumber()) {
+      resolve(getLessEqualGreatDocument(document));
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.onload = function() {
+      const { response } = this;
+      return resolve(getLessEqualGreatDocument(response));
+    };
+
+    xhr.onerror = function() {
+      const err = new Error('could not load page ' + pageNumber);
+
+      return reject(err);
+    };
+
+    xhr.open('GET', window.location.pathname + '?pg=' + pageNumber);
+    xhr.responseType = 'document';
+
+    xhr.send();
+  });
+}
+
+function findCheckedPage() {
+  return new Promise(function(resolve, reject) {
+
     const currentPageNumber = getCurrentPageNumber();
-    const lastPageNumber = getLastPageNumber();
+    var minPageNumber = 1;
+    var maxPageNumber = getLastPageNumber();
 
     let statusPage = null;
 
@@ -194,32 +114,26 @@ function findStatusPage(status) {
           console.log('Looking in page ' + pageNumber);
         }
 
-        return getPageChapters(pageNumber).then(function(chapters) {
-          if (chapters.indexOf(status) === -1) {
-            return;
+        return getPageLessEqualGreat(pageNumber).then(function(leg) {
+          if (leg == -1) {
+            minPageNumber=pageNumber+1;
+          }else if (leg == 1) {
+            maxPageNumber=pageNumber-1;
+          }else{
+            statusPage = pageNumber;
+            console.log('Found');
+            if (statusPage !== currentPageNumber) {
+              addLinkToPage(statusPage);
+            }
           }
-
-          statusPage = pageNumber;
-
-          console.log('Found');
+          if(statusPage === null && minPageNumber<=maxPageNumber){
+            promise = search(Math.floor((minPageNumber+maxPageNumber)/2));
+          }
         });
       });
     }
 
-    promise = search(currentPageNumber);
-    for (let i = 1; i <= lastPageNumber; i++) {
-      if (i === currentPageNumber) {
-        continue;
-      }
-
-      promise = search(i);
-    }
-
-    promise.then(function() {
-      return resolve(statusPage);
-    }).catch(function(err) {
-      return reject(err);
-    });
+    search(currentPageNumber);
   });
 }
 
@@ -245,33 +159,6 @@ function addLinkToPage(page) {
   heading.appendChild(small);
 }
 
-function main() {
-  const slug = getSlug();
-
-  return getStatus(slug).then(function(status) {
-    if (!status) {
-      console.log('Status not found. Ignoring.');
-
-      return null;
-    }
-
-    console.log('Current status: ' + status);
-
-    return findStatusPage(status);
-  }).then(function(page) {
-    if (!page) {
-      return;
-    }
-
-    const currentPageNumber = getCurrentPageNumber();
-    if (page !== currentPageNumber) {
-      addLinkToPage(page);
-    }
-  }).catch(function(err) {
-    console.error(err.message);
-  });
-}
-
 if (isLoggedIn()) {
-  main();
+  findCheckedPage();
 }
