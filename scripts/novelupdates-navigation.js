@@ -21,7 +21,7 @@ function getSeriesUrl() {
 function getSlug() {
   const seriesUrl = getSeriesUrl();
 
-  const m = seriesUrl.match(/series\/([^/+]+)/);
+  const m = seriesUrl.match(/series\/([^/]+)/);
   if (!m) {
     return null;
   }
