@@ -1,0 +1,8 @@
+{
+  "name": "userscripts",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^3.13.1"
+  }
+}
