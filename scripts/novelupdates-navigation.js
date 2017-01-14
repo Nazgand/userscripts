@@ -4,6 +4,7 @@
 // @version     0
 // @include     http://www.novelupdates.com/series/*
 // @include     https://www.novelupdates.com/series/*
+// @grant       none
 // ==/UserScript==
 
 function isLoggedIn() {
