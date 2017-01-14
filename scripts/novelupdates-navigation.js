@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name        NovelUpdates Series Navigation
-// @namespace   novelupdates.series
-// @version     3
+// @namespace   https://github.com/noisypixy/userscripts
+// @version     0
 // @include     http://www.novelupdates.com/series/*
 // @include     https://www.novelupdates.com/series/*
-// @grant       none
 // ==/UserScript==
 
 function isLoggedIn() {
@@ -45,19 +44,26 @@ function getCurrentPageNumber() {
   return currentPageNumber;
 }
 
-function getLessEqualGreatDocument(document) {
-  if(document.querySelector('tr[class^="colorme"]')!==null){
+function getCheckedElementDirection(document) {
+  const table = document.getElementById('myTable');
+  if (!table) {
+    throw new Error('could not find chapters table');
+  }
+
+  const checkbox = table.querySelector('[checked]');
+  if (checkbox) {
     return 0;
-  }else if(document.querySelector('tr[class^="newcolorme"]')!==null){
-    return -1;
-  }else if(document.querySelector('tr[class^="readcolor"]')!==null){
+  }
+
+  const read = table.querySelector('tr.readcolor');
+  if (!read) {
     return 1;
   }
-  console.log("wtf error");
-  return 2;
+
+  return -1;
 }
 
-function getPageLessEqualGreat(pageNumber) {
+function getStatusPageDirection(pageNumber) {
   return new Promise(function(resolve, reject) {
     if (typeof pageNumber !== 'number') {
       throw new Error('pageNumber must be number');
@@ -67,7 +73,10 @@ function getPageLessEqualGreat(pageNumber) {
     }
 
     if (pageNumber === getCurrentPageNumber()) {
-      resolve(getLessEqualGreatDocument(document));
+      const direction = getCheckedElementDirection(document);
+
+      resolve(direction);
+
       return;
     }
 
@@ -75,7 +84,10 @@ function getPageLessEqualGreat(pageNumber) {
 
     xhr.onload = function() {
       const { response } = this;
-      return resolve(getLessEqualGreatDocument(response));
+
+      const direction = getCheckedElementDirection(response);
+
+      return resolve(direction);
     };
 
     xhr.onerror = function() {
@@ -91,49 +103,50 @@ function getPageLessEqualGreat(pageNumber) {
   });
 }
 
-function findCheckedPage() {
-  return new Promise(function(resolve, reject) {
+function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
+  if (typeof firstPage !== 'number' || isNaN(firstPage)) {
+    throw new Error('firstPage must be number');
+  }
+  if (typeof lastPage !== 'number' || isNaN(lastPage)) {
+    throw new Error('lastPage must be number');
+  }
+  if (firstPage > lastPage) {
+    throw new Error('firstPage must be less than or equal to lastPage');
+  }
+  if (firstPage < 1) {
+    throw new Error('firstPage must be greater than 0');
+  }
+  if (Math.floor(firstPage) !== Math.ceil(firstPage)) {
+    throw new Error('firstPage must be int');
+  }
+  if (Math.floor(lastPage) !== Math.ceil(lastPage)) {
+    throw new Error('lastPage must be int');
+  }
 
-    const currentPageNumber = getCurrentPageNumber();
-    var minPageNumber = 1;
-    var maxPageNumber = getLastPageNumber();
+  const pageNumber = firstPage + Math.floor((lastPage - firstPage) / 2);
 
-    let statusPage = null;
+  const currentPageNumber = getCurrentPageNumber();
 
-    let promise = Promise.resolve(null);
+  if (pageNumber === currentPageNumber) {
+    console.log('Looking in current page');
+  } else {
+    console.log('Looking in page ' + pageNumber);
+  }
 
-    function search(pageNumber) {
-      return promise.then(function() {
-        if (statusPage !== null) {
-          return null;
-        }
+  return getStatusPageDirection(pageNumber).then(function(direction) {
+    if (direction === 0) {
+      console.log('Found');
 
-        if (pageNumber === currentPageNumber) {
-          console.log('Looking in current page');
-        } else {
-          console.log('Looking in page ' + pageNumber);
-        }
-
-        return getPageLessEqualGreat(pageNumber).then(function(leg) {
-          if (leg == -1) {
-            minPageNumber=pageNumber+1;
-          }else if (leg == 1) {
-            maxPageNumber=pageNumber-1;
-          }else{
-            statusPage = pageNumber;
-            console.log('Found');
-            if (statusPage !== currentPageNumber) {
-              addLinkToPage(statusPage);
-            }
-          }
-          if(statusPage === null && minPageNumber<=maxPageNumber){
-            promise = search(Math.floor((minPageNumber+maxPageNumber)/2));
-          }
-        });
-      });
+      return pageNumber;
     }
 
-    search(currentPageNumber);
+    if (direction === -1) {
+      lastPage = pageNumber - 1;
+    } else if (direction === 1) {
+      firstPage = pageNumber + 1;
+    }
+
+    return findCheckedPage(firstPage, lastPage);
   });
 }
 
@@ -159,6 +172,14 @@ function addLinkToPage(page) {
   heading.appendChild(small);
 }
 
+function main() {
+  findCheckedPage()
+    .then(addLinkToPage)
+    .catch(function(err) {
+      console.error(err.message);
+    });
+}
+
 if (isLoggedIn()) {
-  findCheckedPage();
+  main();
 }
