@@ -121,6 +121,10 @@ function initializeImages(novelUrlList) {
 }
 
 function initializeLink(element) {
+  if (element.closest('.quote')) {
+    return;
+  }
+
   const alternativeClass = 'userscript-cover-below';
 
   const { href } = element;
