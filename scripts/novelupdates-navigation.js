@@ -31,6 +31,9 @@ function getLastPageNumber() {
   });
 
   const lastPageNumber = pageNumbers.pop() || null;
+  if (lastPageNumber === null) {
+    throw new Error('could not find last page number');
+  }
 
   return lastPageNumber;
 }
@@ -61,6 +64,10 @@ function getCurrentPageNumber() {
  *                   document.
  */
 function getCheckedElementDirection(document) {
+  if (document instanceof Document !== true) {
+    throw new Error('document must be instance of Document');
+  }
+
   const table = document.getElementById('myTable');
   if (!table) {
     throw new Error('could not find chapters table');
@@ -142,7 +149,7 @@ function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
   if (firstPage > lastPage) {
     throw new Error('firstPage must be less than or equal to lastPage');
   }
-  if (firstPage < 1) {
+  if (firstPage <= 0) {
     throw new Error('firstPage must be greater than 0');
   }
 
