@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        NovelUpdates Navigation
+// @name        Novel Updates Navigation
 // @namespace   https://github.com/noisypixy/userscripts
 // @version     0.0.1
 // @grant       none
