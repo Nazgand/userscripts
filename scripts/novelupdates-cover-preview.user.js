@@ -122,7 +122,7 @@ function initializeImages(novelUrlList) {
 
 function initializeLink(element) {
   if (element.closest('.quote')) {
-    return;
+    return Promise.resolve(null);
   }
 
   const alternativeClass = 'userscript-cover-below';
