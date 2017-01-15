@@ -1,16 +1,16 @@
 /* globals module */
 
 module.exports = {
-  'env': {
-    'es6': true,
-    'browser': true,
-    'greasemonkey': true,
+  env: {
+    es6: true,
+    greasemonkey: true,
+    browser: true,
   },
-  'extends': 'eslint:recommended',
-  'parserOptions': {
-    'sourceType': 'module',
+  extends: 'eslint:recommended',
+  parserOptions: {
+    sourceType: 'module',
   },
-  'rules': {
+  rules: {
     'accessor-pairs': 'error',
     'array-bracket-spacing': 'error',
     'array-callback-return': 'error',
@@ -22,13 +22,13 @@ module.exports = {
     'brace-style': 'error',
     'callback-return': 'error',
     'camelcase': ['error', {
-      'properties': 'never',
+      properties: 'never',
     }],
     'class-methods-use-this': 'error',
     'comma-dangle': ['error', 'always-multiline'],
     'comma-spacing': ['error', {
-      'after': true,
-      'before': false,
+      after: true,
+      before: false,
     }],
     'comma-style': 'error',
     'complexity': 'error',
@@ -39,7 +39,7 @@ module.exports = {
     'default-case': 'error',
     'dot-location': ['error', 'property'],
     'dot-notation': ['error', {
-      'allowKeywords': true,
+      allowKeywords: true,
     }],
     'eol-last': 'error',
     'eqeqeq': 'error',
@@ -73,7 +73,9 @@ module.exports = {
     'lines-around-comment': 'error',
     'lines-around-directive': 'error',
     'max-depth': 'error',
-    'max-len': 'error',
+    'max-len': ['error', {
+      ignoreUrls: true,
+    }],
     'max-lines': 'error',
     'max-nested-callbacks': 'error',
     'max-params': 'off',
@@ -163,16 +165,15 @@ module.exports = {
     'no-undef-init': 'error',
     'no-undefined': 'error',
     'no-underscore-dangle': ['error', {
-      'allow': [
+      allow: [
         '_this',
-        '_id',
       ],
     }],
     'no-unmodified-loop-condition': 'error',
     'no-unneeded-ternary': 'error',
     'no-unused-expressions': 'error',
     'no-use-before-define': ['error', {
-      'functions': false,
+      functions: false,
     }],
     'no-useless-call': 'error',
     'no-useless-computed-key': 'error',
@@ -205,7 +206,7 @@ module.exports = {
     'prefer-rest-params': 'error',
     'prefer-spread': 'error',
     'prefer-template': 'off',
-    'quote-props': 'off',
+    'quote-props': ['error', 'consistent-as-needed'],
     'quotes': [
       'error',
       'single',
@@ -219,7 +220,7 @@ module.exports = {
     'sort-keys': 'off',
     'sort-vars': 'off',
     'space-before-blocks': 'error',
-    'space-before-function-paren': 'off',
+    'space-before-function-paren': ['error', 'never'],
     'space-in-parens': [
       'error',
       'never',
@@ -239,7 +240,7 @@ module.exports = {
     ],
     'valid-jsdoc': 'error',
     'vars-on-top': 'off',
-    'wrap-iife': 'error',
+    'wrap-iife': ['error', 'inside'],
     'wrap-regex': 'error',
     'yield-star-spacing': 'error',
     'yoda': [
