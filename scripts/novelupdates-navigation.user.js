@@ -1,16 +1,22 @@
 // ==UserScript==
-// @name        NovelUpdates Series Navigation
+// @name        Novel Updates Navigation
 // @namespace   https://github.com/noisypixy/userscripts
-// @version     0
-// @include     http://www.novelupdates.com/series/*
-// @include     https://www.novelupdates.com/series/*
+// @version     0.0.1
 // @grant       none
+// @match       http://www.novelupdates.com/series/*
+// @match       https://www.novelupdates.com/series/*
 // ==/UserScript==
 
+/**
+ * @returns {Boolean} Whether the user is logged in or not.
+ */
 function isLoggedIn() {
   return !document.querySelector('[href*="/login"]');
 }
 
+/**
+ * @returns {Number} Last page.
+ */
 function getLastPageNumber() {
   const paginationLinks = Array.from(
     document.querySelectorAll('.digg_pagination a')
@@ -25,10 +31,16 @@ function getLastPageNumber() {
   });
 
   const lastPageNumber = pageNumbers.pop() || null;
+  if (lastPageNumber === null) {
+    throw new Error('could not find last page number');
+  }
 
   return lastPageNumber;
 }
 
+/**
+ * @returns {Number} Current page.
+ */
 function getCurrentPageNumber() {
   const currentPageWrapper = document.querySelector(
     '.digg_pagination .current'
@@ -45,7 +57,17 @@ function getCurrentPageNumber() {
   return currentPageNumber;
 }
 
+/**
+ * @param {Document} document Where to look for the checked element.
+ * @returns {Number} -1 if the checked element is in a previous pages,
+ *                   1 if it's in the next pages, or 0 if it's in the given
+ *                   document.
+ */
 function getCheckedElementDirection(document) {
+  if (document instanceof Document !== true) {
+    throw new Error('document must be instance of Document');
+  }
+
   const table = document.getElementById('myTable');
   if (!table) {
     throw new Error('could not find chapters table');
@@ -64,13 +86,16 @@ function getCheckedElementDirection(document) {
   return -1;
 }
 
+/**
+ * @param {Number} pageNumber Page number.
+ * @returns {Promise} A promise that resolves to the direction of the
+ *                    page that contains the latest release read by
+ *                    the user.
+ */
 function getStatusPageDirection(pageNumber) {
   return new Promise(function(resolve, reject) {
-    if (typeof pageNumber !== 'number') {
-      throw new Error('pageNumber must be number');
-    }
-    if (isNaN(pageNumber) || Math.floor(pageNumber) !== Math.ceil(pageNumber)) {
-      throw new Error('invalid page number');
+    if (!Number.isInteger(pageNumber)) {
+      throw new Error('pageNumber must be integer');
     }
 
     if (pageNumber === getCurrentPageNumber()) {
@@ -104,24 +129,28 @@ function getStatusPageDirection(pageNumber) {
   });
 }
 
+/**
+ * Look for the page with the latest read release, using a recursive
+ * binary search.
+ *
+ * This will only search within the closed interval [firstPage, lastPage].
+ *
+ * @param {Number} firstPage Lower bound for the search.
+ * @param {Number} lastPage Upper bound for the search.
+ * @returns {Promise} A promise that resolves to a page number.
+ */
 function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
-  if (typeof firstPage !== 'number' || isNaN(firstPage)) {
-    throw new Error('firstPage must be number');
+  if (!Number.isInteger(firstPage)) {
+    throw new Error('firstPage must be integer');
   }
-  if (typeof lastPage !== 'number' || isNaN(lastPage)) {
-    throw new Error('lastPage must be number');
+  if (!Number.isInteger(lastPage)) {
+    throw new Error('lastPage must be integer');
   }
   if (firstPage > lastPage) {
     throw new Error('firstPage must be less than or equal to lastPage');
   }
-  if (firstPage < 1) {
+  if (firstPage <= 0) {
     throw new Error('firstPage must be greater than 0');
-  }
-  if (Math.floor(firstPage) !== Math.ceil(firstPage)) {
-    throw new Error('firstPage must be int');
-  }
-  if (Math.floor(lastPage) !== Math.ceil(lastPage)) {
-    throw new Error('lastPage must be int');
   }
 
   const pageNumber = firstPage + Math.floor((lastPage - firstPage) / 2);
@@ -151,6 +180,12 @@ function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
   });
 }
 
+/**
+ * Add a link pointing to the given page.
+ *
+ * @param {Number} page Page where the link will point to.
+ * @returns {undefined}
+ */
 function addLinkToPage(page) {
   const table = document.getElementById('myTable');
   if (!table) {
@@ -173,6 +208,11 @@ function addLinkToPage(page) {
   heading.appendChild(small);
 }
 
+/**
+ * The entry point of the user script.
+ *
+ * @returns {undefined}
+ */
 function main() {
   findCheckedPage()
     .then(function(page) {
