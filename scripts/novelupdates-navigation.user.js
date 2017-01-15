@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Navigation
-// @desc        Adds a link on the series page to the page of the latest chapter
-// @namespace   https://github.com/noisypixy/userscripts
+// @description Adds a link on the series page to the page of the latest chapter
+// @namespace   https://github.com/nazgand/userscripts
 // @version     0.0.1
 // @grant       none
 // @match       http://www.novelupdates.com/series/*
