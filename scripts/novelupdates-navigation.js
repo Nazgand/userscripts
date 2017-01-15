@@ -66,11 +66,8 @@ function getCheckedElementDirection(document) {
 
 function getStatusPageDirection(pageNumber) {
   return new Promise(function(resolve, reject) {
-    if (typeof pageNumber !== 'number') {
-      throw new Error('pageNumber must be number');
-    }
-    if (isNaN(pageNumber) || Math.floor(pageNumber) !== Math.ceil(pageNumber)) {
-      throw new Error('invalid page number');
+    if (!Number.isInteger(pageNumber)) {
+      throw new Error('pageNumber must be integer');
     }
 
     if (pageNumber === getCurrentPageNumber()) {
@@ -105,23 +102,17 @@ function getStatusPageDirection(pageNumber) {
 }
 
 function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
-  if (typeof firstPage !== 'number' || isNaN(firstPage)) {
-    throw new Error('firstPage must be number');
+  if (!Number.isInteger(firstPage)) {
+    throw new Error('firstPage must be integer');
   }
-  if (typeof lastPage !== 'number' || isNaN(lastPage)) {
-    throw new Error('lastPage must be number');
+  if (!Number.isInteger(lastPage)) {
+    throw new Error('lastPage must be integer');
   }
   if (firstPage > lastPage) {
     throw new Error('firstPage must be less than or equal to lastPage');
   }
   if (firstPage < 1) {
     throw new Error('firstPage must be greater than 0');
-  }
-  if (Math.floor(firstPage) !== Math.ceil(firstPage)) {
-    throw new Error('firstPage must be int');
-  }
-  if (Math.floor(lastPage) !== Math.ceil(lastPage)) {
-    throw new Error('lastPage must be int');
   }
 
   const pageNumber = firstPage + Math.floor((lastPage - firstPage) / 2);
