@@ -5,7 +5,6 @@
 // @grant       none
 // @match       http://www.novelupdates.com/series/*
 // @match       https://www.novelupdates.com/series/*
-// @updateURL   https://raw.githubusercontent.com/noisypixy/userscripts/master/scripts/novelupdates-navigation.js
 // ==/UserScript==
 
 /**
