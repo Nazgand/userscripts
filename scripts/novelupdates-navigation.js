@@ -1,10 +1,11 @@
 // ==UserScript==
-// @name        NovelUpdates Series Navigation
+// @name        NovelUpdates Navigation
 // @namespace   https://github.com/noisypixy/userscripts
-// @version     0
-// @include     http://www.novelupdates.com/series/*
-// @include     https://www.novelupdates.com/series/*
+// @version     0.0.1
 // @grant       none
+// @match       http://www.novelupdates.com/series/*
+// @match       https://www.novelupdates.com/series/*
+// @updateURL   https://raw.githubusercontent.com/noisypixy/userscripts/master/scripts/novelupdates-navigation.js
 // ==/UserScript==
 
 /**
