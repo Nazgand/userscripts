@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Novel Updates Navigation
+// @desc        Adds a link on the series page to the page of the latest chapter
 // @namespace   https://github.com/noisypixy/userscripts
 // @version     0.0.1
 // @grant       none
@@ -153,11 +154,9 @@ function findCheckedPage(firstPage = 1, lastPage = getLastPageNumber()) {
     throw new Error('firstPage must be greater than 0');
   }
 
-  const pageNumber = firstPage + Math.floor((lastPage - firstPage) / 2);
+  const pageNumber = Math.floor((lastPage + firstPage) / 2);
 
-  const currentPageNumber = getCurrentPageNumber();
-
-  if (pageNumber === currentPageNumber) {
+  if (pageNumber === getCurrentPageNumber()) {
     console.log('Looking in current page');
   } else {
     console.log('Looking in page ' + pageNumber);
@@ -216,9 +215,7 @@ function addLinkToPage(page) {
 function main() {
   findCheckedPage()
     .then(function(page) {
-      const currentPageNumber = getCurrentPageNumber();
-
-      if (page !== currentPageNumber) {
+      if (page !== getCurrentPageNumber()) {
         addLinkToPage(page);
       }
     })
