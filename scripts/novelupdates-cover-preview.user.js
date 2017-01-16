@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Cover Preview
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0.0.0
+// @version     0.0.1
 // @description Add cover previews when hovering over links to novels.
 // @match       https://*.novelupdates.com/*
 // @match       http://*.novelupdates.com/*
@@ -33,7 +33,7 @@ function main() {
     return el.href;
   }).filter(function(url, i, arr) {
     return arr.indexOf(url) === i;
-  }).sort();
+  });
 
   initializeImages(novelUrlList)
     .catch(function(err) {
@@ -163,7 +163,7 @@ function getNovelCoverImageUrl(novelUrl) {
       const parser = new DOMParser();
       const document = parser.parseFromString(responseText, 'text/html');
 
-      const img = document.querySelector('.seriesimg img');
+      const img = document.querySelector('.seriesimg img') || document.querySelector('.serieseditimg img');
       if (!img) {
         const err = new Error('could not find series image');
 
