@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Cover Preview
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0.0.3
+// @version     0.0.4
 // @description Add cover previews when hovering over links to novels.
 // @match       https://*.novelupdates.com/*
 // @match       http://*.novelupdates.com/*
@@ -10,6 +10,7 @@
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
+// @connect     novelupdates.com
 // ==/UserScript==
 //
 // Originally from:
