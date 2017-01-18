@@ -7,10 +7,7 @@
 // @match        http://forum.novelupdates.com/forums/*
 // @grant        none
 // ==/UserScript==
-(function() {
-  let uglyRedirects = document.querySelectorAll('i.fa.fa-share');
-  for(let i = 0; i < uglyRedirects.length; i++) {
-    let uglyLi = uglyRedirects[i].closest('li');
-    uglyLi.parentNode.removeChild(uglyLi);
-  }
-})();
+document.querySelectorAll('i.fa.fa-share').forEach(function(redirect) {
+  const uglyLi = redirect.closest('li');
+  uglyLi.parentNode.removeChild(uglyLi);
+});
