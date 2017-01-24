@@ -15,7 +15,7 @@
     throw new Error('could not find series table');
   }
 
-  var a = document.createElement('a');
+  let a = document.createElement('a');
   a.textContent = 'At least 4.5 rating';
   a.onclick = function() {
     document.querySelectorAll('td a[href*="www.novelupdates.com/series/"]')
@@ -39,7 +39,7 @@
   a.textContent = 'Up to date only';
   a.onclick = function() {
     document.querySelectorAll('td span.cr_status').forEach(function(el) {
-      if (el.innerHTML != el.closest('td').innerHTML
+      if (el.innerHTML !== el.closest('td').innerHTML
         .split('</span> / ')[1].split(' ]')[0]) {
         el.closest('tr').remove();
       }
