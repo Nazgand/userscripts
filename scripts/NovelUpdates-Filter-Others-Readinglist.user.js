@@ -4,7 +4,7 @@
 //              less than 4.5 rating and a link to only show the series that
 //              the user is up to date on
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0
+// @version     1
 // @grant       none
 // @match       http://www.novelupdates.com/readlist/*
 // @match       https://www.novelupdates.com/readlist/*
@@ -15,16 +15,31 @@
     throw new Error('could not find series table');
   }
 
+  let span = document.createElement('span');
+  span.textContent = 'Min rating:';
+  table.parentNode.insertBefore(span, table);
+
+  let minRate = document.createElement('input');
+  minRate.type = 'number';
+  minRate.step = 0.1;
+  minRate.value = 4.5;
+  minRate.max = 5;
+  minRate.min = 1;
+  minRate.style.width = '60px';
+  table.parentNode.insertBefore(minRate, table);
+
   let a = document.createElement('a');
-  a.textContent = 'At least 4.5 rating';
+  a.textContent = 'Filter rating';
   a.onclick = function() {
     document.querySelectorAll('td a[href*="www.novelupdates.com/series/"]')
       .forEach(function(el) {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
-          const { response } = this;
+          const {
+            response
+          } = this;
           if (response.querySelector('.uvotes').innerHTML
-            .split('(')[1].split(' / ')[0] < 4.5) {
+            .split('(')[1].split(' / ')[0] < minRate.value) {
             el.closest('tr').remove();
           }
         };
