@@ -15,11 +15,11 @@
     throw new Error('could not find series table');
   }
 
-  let span = document.createElement('span');
+  const span = document.createElement('span');
   span.textContent = 'Min rating:';
   table.parentNode.insertBefore(span, table);
 
-  let minRate = document.createElement('input');
+  const minRate = document.createElement('input');
   minRate.type = 'number';
   minRate.step = 0.1;
   minRate.value = 4.5;
@@ -35,9 +35,7 @@
       .forEach(function(el) {
         const xhr = new XMLHttpRequest();
         xhr.onload = function() {
-          const {
-            response
-          } = this;
+          const { response } = this;
           if (response.querySelector('.uvotes').innerHTML
             .split('(')[1].split(' / ')[0] < minRate.value) {
             el.closest('tr').remove();
