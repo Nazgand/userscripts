@@ -7,10 +7,10 @@
 // @match        http://lnmtl.com/chapter/*
 // @grant        none
 // ==/UserScript==
-(function () {
+(function() {
   document.querySelector('button.js-toggle-original').click();
   document.querySelectorAll('.translated [data-original-title]').forEach(
-    function (e) {
+    function(e) {
       e.innerText = '{' + e.getAttribute('data-title') + ':' + e.innerText
         + '}';
     });
