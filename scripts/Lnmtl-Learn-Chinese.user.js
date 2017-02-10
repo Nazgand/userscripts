@@ -9,7 +9,7 @@
 // ==/UserScript==
 document.querySelector('button.js-toggle-original').click();
 document.querySelectorAll('.translated [data-original-title]').forEach(
-  function (e) {
+  function(e) {
     e.innerText = '{' + e.getAttribute('data-title') + ':' + e.innerText + '}';
-    e.style.whiteSpace='nowrap';
+    e.style.whiteSpace = 'nowrap';
   });
