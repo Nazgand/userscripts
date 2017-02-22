@@ -5,6 +5,7 @@
 // @description  show the 字 next to the words that would usually be in popups
 // @author       Nazgand
 // @match        http://lnmtl.com/chapter/*
+// @match        https://lnmtl.com/chapter/*
 // @grant        none
 // ==/UserScript==
 document.querySelector('button.js-toggle-original').click();
