@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Cover Preview
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0.0.4
+// @version     0.0.6
 // @description Add cover previews when hovering over links to novels.
 // @match       https://*.novelupdates.com/*
 // @match       http://*.novelupdates.com/*
@@ -18,7 +18,7 @@
 //     https://greasyfork.org/scripts/26439-novelupdates-cover-preview/
 
 const DEFAULT_TTL = 24 * 60 * 60 * 1000;
-const IMAGES = {};
+const COVERDATA = {};
 
 main();
 
@@ -36,7 +36,7 @@ function main() {
     return arr.indexOf(url) === i;
   });
 
-  initializeImages(novelUrlList)
+  initializePreviews(novelUrlList)
     .catch(function(err) {
       console.error(err.message);
     });
@@ -46,12 +46,19 @@ function main() {
   });
 }
 
+Array.prototype.diff = function(a) {
+    return this.filter(function(i) {return a.indexOf(i) < 0;});
+};
+
 function getNovelLinks() {
   const links = Array.from(
     document.querySelectorAll('a[href*="novelupdates.com/series/"]')
   );
+  const badlinks = Array.from(
+    document.querySelectorAll('div.digg_pagination a')
+  );
 
-  return links;
+  return links.filter(function(i) {return badlinks.indexOf(i) < 0;});
 }
 
 function loadStyles() {
@@ -108,14 +115,14 @@ function loadStyles() {
   `);
 }
 
-function initializeImages(novelUrlList) {
+function initializePreviews(novelUrlList) {
   novelUrlList.forEach(function(novelUrl) {
-    IMAGES[novelUrl] = getNovelCoverImageUrl(novelUrl)
+    COVERDATA[novelUrl] = getNovelCoverData(novelUrl)
       .then(loadImage);
   });
 
-  const promises = Object.keys(IMAGES).map(function(key) {
-    return IMAGES[key];
+  const promises = Object.keys(COVERDATA).map(function(key) {
+    return COVERDATA[key];
   });
 
   return Promise.all(promises);
@@ -130,12 +137,13 @@ function initializeLink(element) {
 
   const { href } = element;
 
-  return IMAGES[href].then(function(imageUrl) {
+  return COVERDATA[href].then(function(coverData) {
     const cover = document.createElement('span');
 
     element.insertAdjacentElement('afterend', cover);
 
-    cover.dataset.userscriptCover = imageUrl;
+    cover.dataset.userscriptCover = coverData.imgUrl;
+    element.title += '\n' + coverData.desc;
 
     element.addEventListener('mouseenter', function() {
       const { top } = element.getBoundingClientRect();
@@ -151,10 +159,10 @@ function initializeLink(element) {
   });
 }
 
-function getNovelCoverImageUrl(novelUrl) {
-  const cachedImageUrl = getImageFromCache(novelUrl);
-  if (cachedImageUrl) {
-    return Promise.resolve(cachedImageUrl);
+function getNovelCoverData(novelUrl) {
+  const cachedCoverData = getCoverDataFromCache(novelUrl);
+  if (cachedCoverData) {
+    return Promise.resolve(cachedCoverData);
   }
 
   return new Promise(function(resolve, reject) {
@@ -163,6 +171,8 @@ function getNovelCoverImageUrl(novelUrl) {
 
       const parser = new DOMParser();
       const document = parser.parseFromString(responseText, 'text/html');
+
+      const des = document.querySelector('div#editdescription').innerText;
 
       const img = document.querySelector('.seriesimg img, .serieseditimg img');
       if (!img) {
@@ -178,7 +188,11 @@ function getNovelCoverImageUrl(novelUrl) {
         return reject(err);
       }
 
-      return resolve(imageUrl);
+      return resolve({
+        desc: des,
+        imgUrl: imageUrl,
+        expiresAt: Date.now() + DEFAULT_TTL,
+      });
     }
 
     function onerror() {
@@ -194,37 +208,31 @@ function getNovelCoverImageUrl(novelUrl) {
       onload,
       onerror,
     });
-  }).then(function(imageUrl) {
-    const coverData = {
-      url: imageUrl,
-      expiresAt: Date.now() + DEFAULT_TTL,
-    };
-
+  }).then(function(coverData) {
     GM_setValue(novelUrl, JSON.stringify(coverData));
 
-    return imageUrl;
+    return coverData;
   });
 }
 
-function getImageFromCache(novelUrl) {
+function getCoverDataFromCache(novelUrl) {
   const rawCover = GM_getValue(novelUrl, null);
   if (!rawCover) {
     return null;
   }
 
   const coverData = JSON.parse(rawCover);
-  if (Date.now() > coverData.expiresAt) {
+  if (!coverData.imgUrl || Date.now() > coverData.expiresAt) {
     GM_deleteValue(novelUrl);
 
     return null;
   }
 
-  const imageUrl = coverData.url;
-
-  return imageUrl;
+  return coverData;
 }
 
-function loadImage(imageUrl) {
+function loadImage(coverData) {
+  const imageUrl = coverData.imgUrl;
   return new Promise(function(resolve) {
     const img = new Image();
 
@@ -235,12 +243,12 @@ function loadImage(imageUrl) {
         }
       `);
 
-      return resolve(imageUrl);
+      return resolve(coverData);
     };
 
     img.onerror = function() {
       return setTimeout(function() {
-        return loadImage(imageUrl).then(resolve);
+        return loadImage(coverData).then(resolve);
       }, 1000);
     };
 
