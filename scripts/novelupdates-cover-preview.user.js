@@ -231,7 +231,7 @@ function getCoverDataFromCache(novelUrl) {
 
 function loadImage(coverData) {
   const imageUrl = coverData.imgUrl;
-  
+
   return new Promise(function(resolve) {
     const img = new Image();
 
