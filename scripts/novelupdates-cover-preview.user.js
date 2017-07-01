@@ -46,10 +46,6 @@ function main() {
   });
 }
 
-Array.prototype.diff = function(a) {
-    return this.filter(function(i) {return a.indexOf(i) < 0;});
-};
-
 function getNovelLinks() {
   const links = Array.from(
     document.querySelectorAll('a[href*="novelupdates.com/series/"]')
@@ -58,7 +54,9 @@ function getNovelLinks() {
     document.querySelectorAll('div.digg_pagination a')
   );
 
-  return links.filter(function(i) {return badlinks.indexOf(i) < 0;});
+  return links.filter(function(i) {
+    return badlinks.indexOf(i) < 0;
+  });
 }
 
 function loadStyles() {
@@ -233,6 +231,7 @@ function getCoverDataFromCache(novelUrl) {
 
 function loadImage(coverData) {
   const imageUrl = coverData.imgUrl;
+  
   return new Promise(function(resolve) {
     const img = new Image();
 
