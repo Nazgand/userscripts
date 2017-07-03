@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Cover Preview
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0.0.6
+// @version     0.0.7
 // @description Add cover previews when hovering over links to novels.
 // @match       https://*.novelupdates.com/*
 // @match       http://*.novelupdates.com/*
@@ -19,6 +19,7 @@
 
 const DEFAULT_TTL = 24 * 60 * 60 * 1000;
 const COVERDATA = {};
+const MAX_DESC_LEN = 420;
 
 main();
 
@@ -141,7 +142,8 @@ function initializeLink(element) {
     element.insertAdjacentElement('afterend', cover);
 
     cover.dataset.userscriptCover = coverData.imgUrl;
-    element.title += '\n' + coverData.desc;
+    element.title += '\n' + coverData.desc.substr(0,MAX_DESC_LEN);
+    element.title = element.title.trim();
 
     element.addEventListener('mouseenter', function() {
       const { top } = element.getBoundingClientRect();
