@@ -142,7 +142,7 @@ function initializeLink(element) {
     element.insertAdjacentElement('afterend', cover);
 
     cover.dataset.userscriptCover = coverData.imgUrl;
-    element.title += '\n' + coverData.desc.substr(0,MAX_DESC_LEN);
+    element.title += '\n' + coverData.desc.substr(0, MAX_DESC_LEN);
     element.title = element.title.trim();
 
     element.addEventListener('mouseenter', function() {
