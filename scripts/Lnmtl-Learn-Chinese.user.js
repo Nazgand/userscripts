@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lnmtl Learn Chinese
 // @namespace    http://lnmtl.com/chapter/
-// @version      0.2
+// @version      0.3
 // @description  show the 字 next to the words that would usually be in popups
 // @author       Nazgand
 // @match        http://lnmtl.com/chapter/*
@@ -14,3 +14,4 @@ document.querySelectorAll('.translated [data-original-title]').forEach(
     e.innerText = '{' + e.getAttribute('data-title') + ':' + e.innerText + '}';
     e.style.whiteSpace = 'nowrap';
   });
+document.querySelector('div[id="chat-killer"]').click();
