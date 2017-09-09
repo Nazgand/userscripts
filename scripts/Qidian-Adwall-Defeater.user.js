@@ -15,23 +15,23 @@
 function autoClickBook() {
   const btnPlay = document.querySelector('a.bt._play');
   if (btnPlay !== null) {
-      btnPlay.click();
+    btnPlay.click();
   }
 
   const btnSkip = document.querySelector('a.bt._skip.j_can_skip');
   if (btnSkip !== null) {
-      btnSkip.click();
+    btnSkip.click();
   }
 
   const btnCheckIn = document.querySelector('a.fr._bt.j_check_in');
-  if (btnCheckIn.innerHTML == 'Check-in') {
-      btnCheckIn.click();
+  if (btnCheckIn.innerHTML === 'Check-in') {
+    btnCheckIn.click();
   }
 
   const divLockVideo = document.querySelector('div.lock-video');
   const pContinued = document.querySelector('p.cha-ft[id="continued"]');
   if (pContinued === null || divLockVideo !== null) {
-      setTimeout(autoClickBook, 1000);
+    setTimeout(autoClickBook, 1000);
   }
 }
 if (document.location.href.startsWith('https://www.webnovel.com/book/')) {
@@ -40,11 +40,11 @@ if (document.location.href.startsWith('https://www.webnovel.com/book/')) {
 
 function autoClickRSSBook() {
   let btnRead = document.querySelector('a.bt.j_read[disabled]');
-  if (btnRead !== null) {
-      setTimeout(autoClickRSSBook, 500);
+  if (btnRead === null) {
+    btnRead = document.querySelector('a.bt.j_read');
+    btnRead.click();
   } else {
-      btnRead = document.querySelector('a.bt.j_read');
-      btnRead.click();
+    setTimeout(autoClickRSSBook, 500);
   }
 }
 if (document.location.href.startsWith('https://www.webnovel.com/rssbook/')) {
