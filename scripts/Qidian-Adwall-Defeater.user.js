@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      1
+// @version      2
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://www.webnovel.com/book/*
@@ -24,7 +24,7 @@ function autoClickBook() {
   }
 
   const btnCheckIn = document.querySelector('a.fr._bt.j_check_in');
-  if (btnCheckIn.innerHTML === 'Check-in') {
+  if (btnCheckIn !== null) {
     btnCheckIn.click();
   }
 
