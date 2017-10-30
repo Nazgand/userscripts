@@ -21,24 +21,24 @@ function autoClickBook() {
 }
 function autoClickBookPlay() {
   const btnPlay = document.querySelector('a.bt._play');
-  if (btnPlay !== null) {
-    btnPlay.click();
-    setTimeout(autoClickBookSkip, 15000);
-  } else {
+  if (btnPlay === null) {
     const divLockVideo = document.querySelector('div.lock-video');
     const pContinued = document.querySelector('p.cha-ft[id="continued"]');
     if (pContinued === null || divLockVideo !== null) {
       setTimeout(autoClickBookPlay, 1000);
     }
+  } else {
+    btnPlay.click();
+    setTimeout(autoClickBookSkip, 15000);
   }
 }
 function autoClickBookSkip() {
   const btnSkip = document.querySelector('a.bt._skip.j_can_skip');
-  if (btnSkip !== null) {
+  if (btnSkip === null) {
+    setTimeout(autoClickBookSkip, 1000);
+  } else {
     btnSkip.click();
     setTimeout(autoClickBookPlay, 2000);
-  } else {
-    setTimeout(autoClickBookSkip, 1000);
   }
 }
 if (document.location.href.startsWith('https://www.webnovel.com/book/')) {
