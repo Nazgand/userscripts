@@ -61,13 +61,13 @@ if (document.location.href.startsWith('https://www.webnovel.com/rssbook/')) {
 //Mobile
 function autoClickBookMobile() {
   const btnCheckIn = document.querySelector('a.j_checkinSwitch');
-  if (btnCheckIn !== null &! btnCheckIn.classList.contains('_checked')) {
+  if (btnCheckIn !== null && !btnCheckIn.classList.contains('_checked')) {
     btnCheckIn.click();
   }
   autoClickBookPlayMobile();
 }
-var playedAd = false;
-var verticalScroll = null;
+let playedAd = false;
+let verticalScroll = null;
 function autoClickBookResetScrollMobile() {
   window.scrollTo(0, verticalScroll);
 }
@@ -75,14 +75,14 @@ function autoClickBookPlayMobile() {
   const btnPlay = document.querySelector('a.j_watchAd');
   if (btnPlay === null) {
     const tapNextChapter = document.querySelector('div.swipe-up');
-    if (tapNextChapter !== null &&
-        tapNextChapter.innerHTML == 'Tap to read the next chapter' &&
-        tapNextChapter.style.cssText === '') {
+    if (tapNextChapter !== null
+        && tapNextChapter.innerHTML === 'Tap to read the next chapter'
+        && tapNextChapter.style.cssText === '') {
       if (playedAd) {
         tapNextChapter.click();
       }
       setTimeout(autoClickBookPlayMobile, 1000);
-    } else if (verticalScroll !== null){
+    } else if (verticalScroll !== null) {
       setTimeout(autoClickBookResetScrollMobile, 1000);
     }
   } else {
@@ -110,7 +110,7 @@ if (document.location.href.startsWith('https://m.webnovel.com/book/')) {
 }
 
 function autoClickRSSBookMobile() {
-  let btnRead = document.querySelector('a[title="Continue Reading"]');
+  const btnRead = document.querySelector('a[title="Continue Reading"]');
   if (btnRead !== null) {
     document.location.href = btnRead.href;
   }
