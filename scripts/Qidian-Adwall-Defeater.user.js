@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      4
+// @version      5
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
-// @match        https://www.webnovel.com/book/*
-// @match        https://www.webnovel.com/rssbook/*
+// @match        https://*.webnovel.com/book/*
+// @match        https://*.webnovel.com/rssbook/*
 // @grant        none
 // @homepage     https://github.com/nazgand/userscripts
 // ==/UserScript==
@@ -29,7 +29,7 @@ function autoClickBookPlay() {
     }
   } else {
     btnPlay.click();
-    setTimeout(autoClickBookSkip, 15000);
+    setTimeout(autoClickBookSkip, 4000);
   }
 }
 function autoClickBookSkip() {
@@ -56,4 +56,65 @@ function autoClickRSSBook() {
 }
 if (document.location.href.startsWith('https://www.webnovel.com/rssbook/')) {
   autoClickRSSBook();
+}
+
+//Mobile
+function autoClickBookMobile() {
+  const btnCheckIn = document.querySelector('a.j_checkinSwitch');
+  if (btnCheckIn !== null &! btnCheckIn.classList.contains('_checked')) {
+    btnCheckIn.click();
+  }
+  autoClickBookPlayMobile();
+}
+var playedAd = false;
+var verticalScroll = null;
+function autoClickBookResetScrollMobile() {
+  window.scrollTo(0, verticalScroll);
+}
+function autoClickBookPlayMobile() {
+  const btnPlay = document.querySelector('a.j_watchAd');
+  if (btnPlay === null) {
+    const tapNextChapter = document.querySelector('div.swipe-up');
+    if (tapNextChapter !== null &&
+        tapNextChapter.innerHTML == 'Tap to read the next chapter' &&
+        tapNextChapter.style.cssText === '') {
+      if (playedAd) {
+        tapNextChapter.click();
+      }
+      setTimeout(autoClickBookPlayMobile, 1000);
+    } else if (verticalScroll !== null){
+      setTimeout(autoClickBookResetScrollMobile, 1000);
+    }
+  } else {
+    if (!playedAd) {
+      verticalScroll = window.scrollY;
+    }
+    playedAd = true;
+    btnPlay.click();
+    setTimeout(autoClickBookSkipMobile, 4000);
+  }
+}
+function autoClickBookSkipMobile() {
+  const btnSkip = document.querySelector('button._skip');
+  if (btnSkip === null) {
+    setTimeout(autoClickBookPlayMobile, 2000);
+  } else {
+    if (btnSkip.classList.contains('j_can_skip')) {
+      btnSkip.click();
+    }
+    setTimeout(autoClickBookSkipMobile, 1000);
+  }
+}
+if (document.location.href.startsWith('https://m.webnovel.com/book/')) {
+  setTimeout(autoClickBookMobile, 500);
+}
+
+function autoClickRSSBookMobile() {
+  let btnRead = document.querySelector('a[title="Continue Reading"]');
+  if (btnRead !== null) {
+    document.location.href = btnRead.href;
+  }
+}
+if (document.location.href.startsWith('https://m.webnovel.com/rssbook/')) {
+  autoClickRSSBookMobile();
 }
