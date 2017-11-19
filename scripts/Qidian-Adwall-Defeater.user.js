@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      5
+// @version      6
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://*.webnovel.com/book/*
@@ -13,7 +13,7 @@
 //Suggested use: with Google Chrome AutoMute Extension
 
 function autoClickBook() {
-  const btnCheckIn = document.querySelector('a.fr.j_check_in');
+  const btnCheckIn = document.querySelector('a.j_check_in');
   if (btnCheckIn !== null) {
     btnCheckIn.click();
   }
