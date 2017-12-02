@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      6
+// @version      7
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://*.webnovel.com/book/*
@@ -12,6 +12,12 @@
 
 //Suggested use: with Google Chrome AutoMute Extension
 
+//Begin Config
+const SPEND_STONES = true;
+//End Config
+
+let previousBtnCost = 'Kuroshitsuji';
+
 function autoClickBook() {
   const btnCheckIn = document.querySelector('a.j_check_in');
   if (btnCheckIn !== null) {
@@ -20,16 +26,30 @@ function autoClickBook() {
   autoClickBookPlay();
 }
 function autoClickBookPlay() {
-  const btnPlay = document.querySelector('a.bt._play');
-  if (btnPlay === null) {
-    const divLockVideo = document.querySelector('div.lock-video');
-    const pContinued = document.querySelector('p.cha-ft[id="continued"]');
-    if (pContinued === null || divLockVideo !== null) {
-      setTimeout(autoClickBookPlay, 1000);
+  let canSpend = true;
+  const LOGGED_IN = (document.querySelector('a.j_login') === null);
+  if (SPEND_STONES && LOGGED_IN) {
+    const btnCost = document.querySelector('a.bt._cost');
+    if (btnCost === null || btnCost === previousBtnCost) {
+      canSpend = false;
+    } else {
+      previousBtnCost = btnCost;
+      btnCost.click();
+      setTimeout(autoClickBookPlay, 999);
     }
-  } else {
-    btnPlay.click();
-    setTimeout(autoClickBookSkip, 4000);
+  }
+  if (!(SPEND_STONES && LOGGED_IN && canSpend)) {
+    const btnPlay = document.querySelector('a.bt._play');
+    if (btnPlay === null) {
+      const divLockVideo = document.querySelector('div.lock-video');
+      const pContinued = document.querySelector('p.cha-ft[id="continued"]');
+      if (pContinued === null || divLockVideo !== null) {
+        setTimeout(autoClickBookPlay, 1000);
+      }
+    } else {
+      btnPlay.click();
+      setTimeout(autoClickBookSkip, 4000);
+    }
   }
 }
 function autoClickBookSkip() {
@@ -72,26 +92,40 @@ function autoClickBookResetScrollMobile() {
   window.scrollTo(0, verticalScroll);
 }
 function autoClickBookPlayMobile() {
-  const btnPlay = document.querySelector('a.j_watchAd');
-  if (btnPlay === null) {
-    const tapNextChapter = document.querySelector('div.swipe-up');
-    if (tapNextChapter !== null
-        && tapNextChapter.innerHTML === 'Tap to read the next chapter'
-        && tapNextChapter.style.cssText === '') {
-      if (playedAd) {
-        tapNextChapter.click();
+  let canSpend = true;
+  const LOGGED_IN = (document.querySelector('a.j_signIn') === null);
+  if (SPEND_STONES && LOGGED_IN) {
+    const btnCost = document.querySelector('a.g_bt.j_costSS');
+    if (btnCost === null || btnCost === previousBtnCost) {
+      canSpend = false;
+    } else {
+      previousBtnCost = btnCost;
+      btnCost.click();
+      setTimeout(autoClickBookPlayMobile, 999);
+    }
+  }
+  if (!(SPEND_STONES && LOGGED_IN && canSpend)) {
+    const btnPlay = document.querySelector('a.j_watchAd');
+    if (btnPlay === null) {
+      const tapNextChapter = document.querySelector('div.swipe-up');
+      if (tapNextChapter !== null
+          && tapNextChapter.innerHTML === 'Tap to read the next chapter'
+          && tapNextChapter.style.cssText === '') {
+        if (playedAd) {
+          tapNextChapter.click();
+        }
+        setTimeout(autoClickBookPlayMobile, 1000);
+      } else if (verticalScroll !== null) {
+        setTimeout(autoClickBookResetScrollMobile, 1000);
       }
-      setTimeout(autoClickBookPlayMobile, 1000);
-    } else if (verticalScroll !== null) {
-      setTimeout(autoClickBookResetScrollMobile, 1000);
+    } else {
+      if (!playedAd) {
+        verticalScroll = window.scrollY;
+      }
+      playedAd = true;
+      btnPlay.click();
+      setTimeout(autoClickBookSkipMobile, 4000);
     }
-  } else {
-    if (!playedAd) {
-      verticalScroll = window.scrollY;
-    }
-    playedAd = true;
-    btnPlay.click();
-    setTimeout(autoClickBookSkipMobile, 4000);
   }
 }
 function autoClickBookSkipMobile() {
