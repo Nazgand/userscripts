@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      7
+// @version      8
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://*.webnovel.com/book/*
@@ -12,11 +12,20 @@
 
 //Suggested use: with Google Chrome AutoMute Extension
 
+
 //Begin Config
+
+//Buy chapters with spirit stones if possible
 const SPEND_STONES = true;
+
+/* Watch ads while reading 1st chapter. Only available on computer, as would be
+annoying on mobile. If you use mobile, rumor has it you should be using a
+certain version of a certain app which would be better. *wink* */
+const SPEND_STONES_ONLY1CHAPTER = true;
+
 //End Config
 
-let previousBtnCost = 'Kuroshitsuji';
+let previousBtnCost = 'YetToSpend';
 
 function autoClickBook() {
   const btnCheckIn = document.querySelector('a.j_check_in');
@@ -30,7 +39,8 @@ function autoClickBookPlay() {
   const LOGGED_IN = (document.querySelector('a.j_login') === null);
   if (SPEND_STONES && LOGGED_IN) {
     const btnCost = document.querySelector('a.bt._cost');
-    if (btnCost === null || btnCost === previousBtnCost) {
+    if (btnCost === null || btnCost === previousBtnCost
+        || (SPEND_STONES_ONLY1CHAPTER && previousBtnCost != 'YetToSpend')) {
       canSpend = false;
     } else {
       previousBtnCost = btnCost;
