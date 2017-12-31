@@ -40,7 +40,7 @@ function autoClickBookPlay() {
   if (SPEND_STONES && LOGGED_IN) {
     const btnCost = document.querySelector('a.bt._cost');
     if (btnCost === null || btnCost === previousBtnCost
-        || (SPEND_STONES_ONLY1CHAPTER && previousBtnCost != 'YetToSpend')) {
+        || (SPEND_STONES_ONLY1CHAPTER && previousBtnCost !== 'YetToSpend')) {
       canSpend = false;
     } else {
       previousBtnCost = btnCost;
