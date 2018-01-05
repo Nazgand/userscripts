@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      8
+// @version      9
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://*.webnovel.com/book/*
@@ -38,6 +38,7 @@ function autoClickBookPlay() {
   let canSpend = true;
   const LOGGED_IN = (document.querySelector('a.j_login') === null);
   if (SPEND_STONES && LOGGED_IN) {
+    console.log('autoClickBookPlay Spend');
     const btnCost = document.querySelector('a.bt._cost');
     if (btnCost === null || btnCost === previousBtnCost
         || (SPEND_STONES_ONLY1CHAPTER && previousBtnCost !== 'YetToSpend')) {
@@ -49,25 +50,22 @@ function autoClickBookPlay() {
     }
   }
   if (!(SPEND_STONES && LOGGED_IN && canSpend)) {
-    const btnPlay = document.querySelector('a.bt._play');
-    if (btnPlay === null) {
-      const divLockVideo = document.querySelector('div.lock-video');
-      const pContinued = document.querySelector('p.cha-ft[id="continued"]');
-      if (pContinued === null || divLockVideo !== null) {
-        setTimeout(autoClickBookPlay, 1000);
+    console.log('autoClickBookPlay Watch');
+    if (document.querySelector('div.lock-video._play') === null){
+      console.log('null videoPlay');
+      //no video is playing
+      const btnPlay = document.querySelector('a.bt._play');
+      if (btnPlay === null) {
+        console.log('null btnPlay');
+      } else {
+        btnPlay.click();
       }
-    } else {
-      btnPlay.click();
-      setTimeout(autoClickBookSkip, 4000);
     }
-  }
-}
-function autoClickBookSkip() {
-  const btnSkip = document.querySelector('a.bt._skip.j_can_skip');
-  if (btnSkip === null) {
-    setTimeout(autoClickBookSkip, 1000);
-  } else {
-    btnSkip.click();
+    //skip skippable videos
+    const btnSkip = document.querySelector('a.bt._skip.j_can_skip');
+    if (btnSkip !== null) {
+      btnSkip.click();
+    }
     setTimeout(autoClickBookPlay, 2000);
   }
 }
