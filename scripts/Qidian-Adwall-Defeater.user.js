@@ -51,7 +51,7 @@ function autoClickBookPlay() {
   }
   if (!(SPEND_STONES && LOGGED_IN && canSpend)) {
     console.log('autoClickBookPlay Watch');
-    if (document.querySelector('div.lock-video._play') === null){
+    if (document.querySelector('div.lock-video._play') === null) {
       console.log('null videoPlay');
       //no video is playing
       const btnPlay = document.querySelector('a.bt._play');
