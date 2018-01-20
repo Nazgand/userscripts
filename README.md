@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Nazgand/userscripts.svg?branch=master)](https://travis-ci.org/Nazgand/userscripts)
 
-This project was inspired by the great and mighty programmer noisypixy who is the original author of `Novel Updates Navigation' and `Novel Updates Cover Preview'(originaler author? sz). The feature provided by `Novel Updates Navigation' is so great that NU integrated the navigation feature.
+This project was inspired by the great and mighty programmer noisypixy who is the original author of `Novel Updates Navigation` and `Novel Updates Cover Preview`(originaler author? sz). The feature provided by `Novel Updates Navigation` is so great that NU integrated the navigation feature.
 
 | Title | Description | Install |
 |---|---|---|
