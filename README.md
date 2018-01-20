@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/Nazgand/userscripts.svg?branch=master)](https://travis-ci.org/Nazgand/userscripts)
 
+This project was inspired by the great and mighty programmer noisypixy who is the original author of `Novel Updates Cover Preview'.
+
 | Title | Description | Install |
 |---|---|---|
 | Novel Updates Cover Preview | Add cover previews when hovering over links to novels. | [Install](https://github.com/Nazgand/userscripts/raw/master/scripts/novelupdates-cover-preview.user.js) |
