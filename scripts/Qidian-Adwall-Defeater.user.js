@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Qidian Adwall Defeater
 // @namespace    whatever
-// @version      9
+// @version      10
 // @description  passes adwall
 // @author       <nazgand@gmail.com>
 // @match        https://*.webnovel.com/book/*
@@ -39,7 +39,7 @@ function autoClickBookPlay() {
   const LOGGED_IN = (document.querySelector('a.j_login') === null);
   if (SPEND_STONES && LOGGED_IN) {
     console.log('autoClickBookPlay Spend');
-    const btnCost = document.querySelector('a.bt._cost');
+    const btnCost = document.querySelector('a.bt.j_unlockChapter');
     if (btnCost === null || btnCost === previousBtnCost
         || (SPEND_STONES_ONLY1CHAPTER && previousBtnCost !== 'YetToSpend')) {
       canSpend = false;
