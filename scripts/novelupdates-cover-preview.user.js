@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Novel Updates Cover Preview
 // @namespace   https://github.com/nazgand/userscripts
-// @version     0.0.7
+// @version     0.1.0
 // @description Add cover previews when hovering over links to novels.
 // @match       https://*.novelupdates.com/*
 // @match       http://*.novelupdates.com/*
@@ -52,7 +52,7 @@ function getNovelLinks() {
     document.querySelectorAll('a[href*="novelupdates.com/series/"]')
   );
   const badlinks = Array.from(
-    document.querySelectorAll('div.digg_pagination a')
+    document.querySelectorAll('span.extra_chp_icons a, div.digg_pagination a')
   );
 
   return links.filter(function(i) {
