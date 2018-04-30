@@ -9,11 +9,11 @@
 // ==/UserScript==
 
 //constants to minimize errors made by script
-const svgCommunity = "M18";
-const svgPublic = "M24 4";
-const svgCircle = "M33";
-const svgPerson = "M32";
-const svgCollection = "M24 2";
+const svgCommunity = 'M18';
+const svgPublic = 'M24 4';
+const svgCircle = 'M33';
+const svgPerson = 'M32';
+const svgCollection = 'M24 2';
 
 
 // BEGIN Changable constants ----------------------------------------
@@ -25,26 +25,25 @@ const patience = 4400;
 // END   Changable constants ----------------------------------------
 
 
-var lastContentPublishingBox = 0, beganWaiting=0;
-function waitForAndPress(){//Find the Audience Change button
-  var shareWithButton=lastContentPublishingBox.querySelector('span[role="button"][aria-label^="Share with"]');
+let lastContentPublishingBox = 0
+let beganWaiting = 0;
+function waitForAndPress() {//Find the Audience Change button
+  let shareWithButton = lastContentPublishingBox.querySelector('span[role="button"][aria-label^="Share with"]');
   //wait for the options to load, yet do not wait too long
-  if(shareWithButton===null || Date.now()>beganWaiting+patience){
+  if (shareWithButton===null || Date.now()>beganWaiting+patience) {
     setTimeout(waitForAndPress, frequencyToCheckForButton);
-  } else {
-    //Check to see whether change is needed while considering communities named 'Public'
-    if(shareWithButton.attributes['aria-label'].value!=='Share with: '+defaultAudienceNameDesired ||
-     !shareWithButton.innerHTML.startsWith(defaultAudienceNameDesired) ||
-     !shareWithButton.querySelector('svg>path').attributes.d.value.startsWith(defaultAudienceSvgDesired)) {
-      //click button to remind of need to change Audience
-      shareWithButton.click();
-    }
+  //Check to see whether change is needed while considering communities named 'Public'
+  } else if (shareWithButton.attributes['aria-label'].value!=='Share with: '+defaultAudienceNameDesired ||
+   !shareWithButton.innerHTML.startsWith(defaultAudienceNameDesired) ||
+   !shareWithButton.querySelector('svg>path').attributes.d.value.startsWith(defaultAudienceSvgDesired)) {
+    //click button to remind of need to change Audience
+    shareWithButton.click();
   }
 }
-function main(){
+function main() {
   //check for new ContentPublishingBox
-  var newContentPublishingBox = document.querySelector('c-wiz[role="dialog"]:not([aria-hidden])>c-wiz[data-av]>content');
-  if(newContentPublishingBox!==null && lastContentPublishingBox!==newContentPublishingBox){
+  let newContentPublishingBox = document.querySelector('c-wiz[role="dialog"]:not([aria-hidden])>c-wiz[data-av]>content');
+  if (newContentPublishingBox!==null && lastContentPublishingBox!==newContentPublishingBox) {
     lastContentPublishingBox = newContentPublishingBox;
     beganWaiting = Date.now();
     waitForAndPress();
