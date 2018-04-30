@@ -171,7 +171,8 @@ module.exports = {
     }],
     'no-unmodified-loop-condition': 'error',
     'no-unneeded-ternary': 'error',
-    'no-unused-expressions': 'warn',
+    'no-unused-expressions': 'error',
+    'no-unused-vars': 'warn',
     'no-use-before-define': ['error', {
       functions: false,
     }],
