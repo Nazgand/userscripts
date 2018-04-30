@@ -4,7 +4,7 @@
 // @version    0.1
 // @description  Whenever Google+ has the default audience something other than what you want, this script will remind you to choose your audience.
 // @author     Nazgand
-// @match    https://plus.google.com/
+// @match    https://plus.google.com/*
 // @grant    none
 // ==/UserScript==
 
