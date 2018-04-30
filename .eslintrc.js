@@ -73,7 +73,7 @@ module.exports = {
     'lines-around-comment': 'error',
     'lines-around-directive': 'error',
     'max-depth': 'error',
-    'max-len': ['error', {
+    'max-len': ['warning', {
       ignoreUrls: true,
     }],
     'max-lines': 'error',
@@ -171,7 +171,7 @@ module.exports = {
     }],
     'no-unmodified-loop-condition': 'error',
     'no-unneeded-ternary': 'error',
-    'no-unused-expressions': 'error',
+    'no-unused-expressions': 'warning',
     'no-use-before-define': ['error', {
       functions: false,
     }],
