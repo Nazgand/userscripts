@@ -14,4 +14,5 @@ document.querySelectorAll('.translated [data-original-title]').forEach(
     e.innerText = '{' + e.getAttribute('data-title') + ':' + e.innerText + '}';
     e.style.whiteSpace = 'nowrap';
   });
-document.querySelector('div[id="chat-killer"]').click();
+document.querySelector('a[id=scrollUp]').remove();
+document.querySelector('div.crate').remove();
