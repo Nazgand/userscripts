@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lnmtl Learn Chinese
 // @namespace    http://lnmtl.com/chapter/
-// @version      0.3
+// @version      0.4
 // @description  show the 字 next to the words that would usually be in popups
 // @author       Nazgand
 // @match        http://lnmtl.com/chapter/*
