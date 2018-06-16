@@ -16,7 +16,7 @@
 //Begin Config
 
 //Buy chapters with spirit stones if possible
-const SPEND_STONES = true;
+const SPEND_STONES = false;
 
 /* Watch ads while reading 1st chapter. Only available on computer, as would be
 annoying on mobile. If you use mobile, rumor has it you should be using a
