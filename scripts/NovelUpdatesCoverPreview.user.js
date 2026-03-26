@@ -2,7 +2,7 @@
 // https://greasyfork.org/scripts/26439-novelupdates-cover-preview/
 // @name        Novel Updates Cover Preview
 // @namespace   SomeThingThatShouldNotClashWithOtherScripts_SZ_NU
-// @version     2.68.93
+// @version     2.68.94
 // @description Previews covers in NovelUpdates.Com (and other sites) when hovering over hyperlinks that lead to Novel Updates series pages and some other pages.
 // @author      SZ
 // @supportURL  https://greasyfork.org/de/scripts/26439-novelupdates-cover-preview/feedback
@@ -196,7 +196,7 @@
 	const defaultShowIconNextToLink = false;
 	let useReadingListIconAndTitle = true;
 	const eventListenerStyle = 0; //undefined/0 forEach seriesLink addeventlistener(mouseenter/mouseleave) / 1 window addeventlistener(mousemove)
-	const version = "2.68.93";
+	const version = "2.68.94";
 	const forceUpdate = false;
 	const settingsToKeepOnDataReset = [
 		"showDescription",
@@ -961,14 +961,15 @@
 	async function preloadCoverData(forceReload = false) {
 		if (!EnablePreloader && !showIconNextToLink && !forceReload) { return; }
 		AllSeriesNodes = [];
+		pendingPreloadNodes = [];
 		if (linkConfigs && linkConfigKeys.length > 0) {
 			for (let i = 0; i < linkConfigKeys.length; i++) {
-				updateSeriesNodes(AllSeriesNodes, linkConfigKeys[i], forceReload, true);
+				const needsPreload = updateSeriesNodes(AllSeriesNodes, linkConfigKeys[i], forceReload, true);
+				pendingPreloadNodes.push(...needsPreload);
 			}
 		}
 		removeEventListenerFromNodes(AllSeriesNodes);
 		if (AllSeriesNodes.length > 0) {
-			pendingPreloadNodes = [...AllSeriesNodes];
 			AllSeriesNodes.forEach(node => {
 				if (eventListenerStyle == 0) {
 					node.addEventListener("mouseenter", mouseEnterPopup);
@@ -1839,7 +1840,7 @@
 		preloadUrlRequests = false,
 	) {
 		const config = linkConfigs[configKey];
-		if (!config) return;
+		if (!config) return [];
 		if (arrayTargetNode && arrayTargetNode.length > 0) {
 			arrayTargetNode.forEach(function (selector) {
 				if (
@@ -1862,6 +1863,7 @@
 		let prunedSeriesLinkNodes = [];
 		if (seriesLinkNodes && seriesLinkNodes.length > 0) {
 			seriesLinkNodes.forEach(function (el) {
+				if (arrayTargetNode.includes(el)) return;
 				const elementUrl = el.href;
 				let hasLinkMatch = false;
 				const match = elementUrl.match(new RegExp(configKey, "i"));
@@ -1879,6 +1881,7 @@
 					el.setAttribute("coverDataExternalTarget", configKey);
 					const cacheKey = getLinkToSeriesPage(elementUrl, configKey);
 					el.setAttribute("data-cache-key", cacheKey);
+					arrayTargetNode.push(el);
 					const coverData = GM_getCachedValue(cacheKey);
 					if (coverData && !forceReload) {
 						setLinkState(el, linkIconEnum.popupHasCoverData, false);
@@ -1889,7 +1892,7 @@
 				}
 			});
 		}
-		arrayTargetNode.push(...prunedSeriesLinkNodes);
+		return prunedSeriesLinkNodes;
 	}
 	function switchShowIconNextToLink() {
 		showIconNextToLink = !showIconNextToLink;
@@ -2003,8 +2006,10 @@
 				currentPopupEvent = e;
 				let targetPage = coverDataExternalTarget;
 				let mainSeriesHref = getLinkToSeriesPage(Href, targetPage);
-				syncLinksByCacheKey(mainSeriesHref, linkIconEnum.popupLoading);
 				let hasCoverData = GM_getCachedValue(mainSeriesHref);
+				if (!(hasCoverData && hasCoverData.title) || forceReload) {
+					syncLinksByCacheKey(mainSeriesHref, linkIconEnum.popupLoading);
+				}
 				ajaxLoadImageUrlAndShowPopup(
 					forceReload,
 					target, //Href

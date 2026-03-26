@@ -7,7 +7,7 @@ visual tooltip wrapper around web novel titles.
 - - -
 ## Development Notes
 
-### CHANGES 2.6.0 ➡ 2.68.93:
+### CHANGES 2.6.0 ➡ 2.68.94:
 
 - **Unified Synchronization Engine**: Implemented `syncLinksByCacheKey` to
   atomically update all duplicate links and preloader queues.
