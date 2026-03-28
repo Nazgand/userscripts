@@ -1,18 +1,16 @@
 // ==UserScript==
-// https://greasyfork.org/scripts/26439-novelupdates-cover-preview/
 // @name        Novel Updates Cover Preview
-// @namespace   SomeThingThatShouldNotClashWithOtherScripts_SZ_NU
-// @version     2.68.94
-// @description Previews covers in NovelUpdates.Com (and other sites) when hovering over hyperlinks that lead to Novel Updates series pages and some other pages.
-// @author      SZ
-// @supportURL  https://greasyfork.org/de/scripts/26439-novelupdates-cover-preview/feedback
-// @website     https://forum.novelupdates.com/threads/novel-updates-userscript-to-preview-cover-images-on-greasyfork.117240/
+// @namespace   Nazgand.NovelUpdates
+// @version     3
+// @description Previews cover image when hovering over hyperlinks that lead to Novel Updates series pages & some other pages. Forked from [The Original Version Made By SZ] (https://greasyfork.org/en/scripts/26439-novelupdates-cover-preview).
+// @author      Nazgand
+// @supportURL  Https://GitHub.Com/Nazgand/UserScripts/discussions
 // @website     Https://GitHub.Com/Nazgand/UserScripts/
 // @include     /^https?:\/\/(.*\.)?(novelupdates|scribblehub)(forum)?\.com/
 // @include     /^https?:\/\/(.*\.)?(royalroad|webnovel|mangaupdates)\.com/
 // @include     /^https?:\/\/(.*\.)?(mydramalist|imdb|wiki\.d\-addicts|asianwiki|tvmaze)\.com/
 // @include     /^https?:\/\/(.*\.)?mangadex\.org/
-// @include     file:///*/userscripts/TestNovelUpdatesCoverPreview.html
+// @include     file:///*/TestNovelUpdatesCoverPreview.html
 // @connect     novelupdates.com
 // @connect     scribblehub.com
 // @connect     royalroad.com
@@ -24,28 +22,40 @@
 // @connect     asianwiki.com
 // @connect     tvmaze.com
 // @connect     mangadex.org
-// @grant       GM_xmlhttpRequest
-// @grant       GM_addStyle
-// @grant       GM_setValue
-// @grant       GM_getValue
-// @grant       GM_deleteValue
-// @grant       GM_listValues
-// @run-at   	document-end
+// @grant       GM.xmlHttpRequest
+// @grant       GM.addStyle
+// @grant       GM.setValue
+// @grant       GM.getValue
+// @grant       GM.deleteValue
+// @grant       GM.listValues
+// @run-at      document-end
 // @license     http://creativecommons.org/licenses/by-nc-sa/4.0/
-// @downloadURL https://update.greasyfork.org/scripts/26439/novelupdates%20Cover%20Preview.user.js
-// @updateURL   https://update.greasyfork.org/scripts/26439/novelupdates%20Cover%20Preview.meta.js
+// @downloadURL Https://GitHub.Com/Nazgand/UserScripts/raw/master/scripts/NovelUpdatesCoverPreview.user.js
+// @updateURL   https://update.greasyfork.org/scripts/571289/Novel%20Updates%20Cover%20Preview.meta.js
+// @icon        data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAnCAIAAAADwcZiAAAAAXNSR0IB2cksfwAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAADJJREFUWMPtzTEBACAIADAkEQnoYf8itMDDrcBO9Y11GS9YrVar1Wq1Wq1Wq9Vqtf61DsefARWoUNJVAAAAAElFTkSuQmCC
 // ==/UserScript==
 (function () {
 	"use strict";
+	// User Settings
 	const UpdateAtCacheAge = 39 ** 6; // Minimum Age of Cached data in milliseconds required to send an HTTP request to check whether the cache should be updated. Ignored if the cached data is missing or corrupt.
 	let EnablePreloader = true;
-	const MaximumTotalPreloads = 5;
+	const MaximumTotalPreloads = 15;
+	const MaximumSitePreloads = 5;
 	const PreloadDelayMs = 398;
-	const colorBackground = '#303e59';
-	const colorForeground = '#607cb2';
-	const colorBorder = "#00ff00";
-	const colorLinks = '#ffff00';
-	const colorImportant = '#ff00ff';
+	const color = {
+		'Background': '#303e59',
+		'Text': '#607cb2',
+		'Border': '#00ff00',
+		'Link': '#ffff00',
+		'Important': '#ff00ff',
+	};
+	const defaultShowIconNextToLink = false;
+	let useReadingListIconAndTitle = true;
+	// END User Settings
+
+	const eventListenerStyle = 0; //undefined/0 forEach seriesLink addeventlistener(mouseenter/mouseleave) / 1 window addeventlistener(mousemove)
+	const version = "3";
+	const forceUpdate = false;
 	const PREDEFINED_NATIVE_TITLE = "Recommended by";
 	const targetContainerIDArrayToObserve = [
 		"profile_content3",
@@ -55,14 +65,14 @@
 	const NU_REGEX = "^https?://(?:www\\.)?novelupdates\\.com/series/([\\w-]+)";
 	const MD_REGEX = "^https?://(?:www\\.)?mangadex\\.org/(?:title|manga)/([^/\\s]+)";
 	const TV_REGEX = "^https?://(?:www\\.)?tvmaze\\.com/shows/(\\d+)";
-	const SH_REGEX = "^https?://(?:www\\.)?scribblehub\\.com/series/(\\d+(?=/)[/]?[\\w-]+|\\d+)";
+	const SH_REGEX = "^https?://(?:www\\.)?scribblehub\\.com/series/(\\d+)";
 	const WN_REGEX = "^https?://(?:www\\.|m\\.)?webnovel\\.com/book/([\\w'-]+)";
 	const RR_REGEX = "^https?://(?:www\\.)?royalroadl?\\.com/fiction/(\\d+)";
 	const MU_REGEX = "^https?://(?:www\\.)?mangaupdates\\.com/series/(\\w{5,})";
 	const MDL_REGEX = "^https?://(?:www\\.)?mydramalist\\.com/(\\d+-[\\w-]+)";
 	const IMDB_REGEX = "^https?://(?:www\\.)?imdb\\.com/title/(tt\\d+)";
 	const WIKI_REGEX = "^https?://(?:www\\.)?wiki\\.d-addicts\\.com/([\\w\\.\\:()-]+)";
-	const AW_REGEX = "^https?://(?:www\\.)?asianwiki\\.com/([\\w\\.\\:()-]+)";
+	const AW_REGEX = "^https?://(?:www\\.)?asianwiki\\.com/(?!Category\\:)([\\w\\.\\:()-]+)";
 	var linkConfigs = {
 		[NU_REGEX]: {
 			idPrefix: "nu_",
@@ -135,6 +145,7 @@
 			targetDomain: "mangaupdates.com",
 			seriesImage: "img[src*=\"cdn.mangaupdates.com/image/\"]",
 			seriesPageTitle: ".releasestitle",
+			seriesPageVotes: ':nth-child(5 of div.info-box-module__gIhiNW__sContent[data-cy="info-box-unknown"])',
 			seriesPageDescription: "[data-cy=\"info-box-description\"]",
 			seriesReadingListTitle: "div#showList > div > a > u",
 			seriesPageStatus: "[data-cy=\"info-box-status\"]",
@@ -193,11 +204,6 @@
 		},
 	};
 	const linkConfigKeys = Object.keys(linkConfigs);
-	const defaultShowIconNextToLink = false;
-	let useReadingListIconAndTitle = true;
-	const eventListenerStyle = 0; //undefined/0 forEach seriesLink addeventlistener(mouseenter/mouseleave) / 1 window addeventlistener(mousemove)
-	const version = "2.68.94";
-	const forceUpdate = false;
 	const settingsToKeepOnDataReset = [
 		"showDescription",
 		"showDetails",
@@ -228,12 +234,15 @@
 		readingListIcon: undefined,
 		readingListTitle: undefined,
 	};
-	let completedPreloads = 0;
-	let InProgressPreloads = 0;
-	let pendingPreloadNodes = [];
-	let preloaderLoopTimeout = null;
+	let Preloads = {
+		'AllSites': {
+			Completed: 0,
+			InProgress: 0,
+		}
+	};
+	let ignorePreloaderBudget = false;
 	let preloadedUrlSet = new Set();
-	const RE = /\s*,\s*/; //Regex for split and remove empty spaces
+	const reSpace = /\s*,\s*/; //Regex for split and remove empty spaces
 	const reChapters = new RegExp("([0-9.]+)[ ]*(wn)?[ ]*chapters");
 	const reChaptersNumberBehind = new RegExp("chapter[s]?[ ]*[(]?[ ]*([0-9.]+)");
 	const reChaptersOnlyNumbers = new RegExp("([0-9.]+)");
@@ -242,7 +251,7 @@
 	const reVoteCount = new RegExp("([0-9.]+)[ ]*(votes|ratings|users)");
 	const defaultHeight = 400; //in pixel
 	const smallHeight = 251;
-	const PREDEFINED_NATIVE_TITLE_ARRAY = PREDEFINED_NATIVE_TITLE.split(RE);
+	const PREDEFINED_NATIVE_TITLE_ARRAY = PREDEFINED_NATIVE_TITLE.split(reSpace);
 	let showDetails = true;
 	let popupVisible = false; //not all links have a title or text(img link) to set currentTitleHover. Manual state saving needed
 	let isPopupFrozen = false;
@@ -250,8 +259,9 @@
 	let previousTitleHover,
 		currentTitleHover,
 		currentCoverData,
-		currentPopupEvent;
-	let popup, popupTitle, popupContent, diagnosticContainer;
+		currentPopupEvent,
+		activeHoverCacheKey;
+	let popup, popupTitle, popupContent, LineSVG;
 	let lastTarget;
 	let lastPopupTarget;
 	let showDescription = false;
@@ -265,29 +275,25 @@
 	let pressedKeys = [];
 	const supportsCSSMin = CSS.supports("max-Height", "min(400px, 100%)");
 	const config = { attributes: true, childList: true, subtree: true };
-	function GM_getCachedValue(key) {
+	function isCoverDataValid(coverData) {
+		if (!coverData || !coverData.title) return false;
+		for (let prop in coverData) {
+			if (typeof coverData[prop] === "string" && (coverData[prop].includes("⏳ Loading") || coverData[prop].includes("Error loading") || coverData[prop] === "Error")) {
+				return false;
+			}
+		}
+		return true;
+	}
+	async function GM_getCachedValue(key) {
 		const novelId = getNovelId(key) || key;
-		const rawCover = GM_getValue(novelId, null);
+		const rawCover = await GM.getValue(novelId, null);
 		let result = null;
 		if (rawCover === null || rawCover == "null") {
 		} else {
 			let coverData;
 			try {
 				coverData = JSON.parse(rawCover);
-				if (!(coverData.title && coverData.cachedTime)) {
-					GM_deleteValue(novelId);
-				} else {
-					let isCorrupted = false;
-					for (let prop in coverData) {
-						if (typeof coverData[prop] === "string" && coverData[prop].includes("⏳ Loading")) {
-							isCorrupted = true;
-							break;
-						}
-					}
-					if (isCorrupted) {
-						GM_deleteValue(novelId);
-						return null;
-					}
+				if (coverData.title && coverData.cachedTime) {
 					result = {
 						url: coverData.url,
 						title: coverData.title,
@@ -306,12 +312,12 @@
 					};
 				}
 			} catch (e) {
-				GM_deleteValue(novelId);
+				await GM.deleteValue(novelId);
 			}
 		}
 		return result;
 	}
-	function GM_setCachedValue(key, coverData) {
+	async function GM_setCachedValue(key, coverData) {
 		const novelId = getNovelId(key) || key;
 		const cD = {
 			url: coverData.url,
@@ -328,7 +334,7 @@
 			readingListTitle: coverData.readingListTitle,
 			cachedTime: Date.now(),
 		};
-		GM_setValue(novelId, JSON.stringify(cD));
+		await GM.setValue(novelId, JSON.stringify(cD));
 	}
 	const debounce = function (func, timeout) {
 		let timer;
@@ -351,7 +357,7 @@
 			}
 		};
 	};
-	const callbackMutationObserver = function (mutationsList, observer) {
+	const callbackMutationObserver = function (mutationsList, _) {
 		for (const mutation of mutationsList) {
 			if (mutation.type === "childList") {
 				hidePopUp();
@@ -362,44 +368,58 @@
 	const mutationObserver = new MutationObserver(callbackMutationObserver);
 	const debouncedPreloadCoverData = debounce(preloadCoverData, 100);
 	const throttledGetHoveredItem = throttle(getHoveredItem, 50);
-	function checkDataVersion() {
-		const dataVersion = GM_getValue("version", null);
+	async function checkDataVersion() {
+		const dataVersion = await GM.getValue("version", null);
 		if (
 			dataVersion === null ||
 			dataVersion === undefined ||
 			dataVersion != version ||
 			forceUpdate
 		) {
-			resetDatabase();
+			await resetDatabase();
 		}
 	}
-	function resetDatabase() {
-		const oldValues = GM_listValues();
+	async function resetDatabase() {
+		const oldValues = await GM.listValues();
 		const oldValuesLengthToLoop = oldValues.length;
 		for (let i = 0; i < oldValuesLengthToLoop; i++) {
 			if (!settingsToKeepOnDataReset.includes(oldValues[i])) {
-				GM_deleteValue(oldValues[i]);
+				await GM.deleteValue(oldValues[i]);
 			} else {
 			}
 		}
-		GM_setValue("version", version);
+		await GM.setValue("version", version);
 	}
 	function drawLinkToPopupLine(PopupDot, LinkDot) {
-		if (!diagnosticContainer) return;
-		diagnosticContainer.style.position = "fixed";
-		diagnosticContainer.style.left = "0px";
-		diagnosticContainer.style.top = "0px";
-		diagnosticContainer.style.width = "100%";
-		diagnosticContainer.style.height = "100%";
-		diagnosticContainer.style.zIndex = 1000;
-		diagnosticContainer.style.pointerEvents = "none";
-		diagnosticContainer.innerHTML = `
-			<svg style="overflow:visible; width:100%; height:100%; position:fixed; top:0; left:0; pointer-events:none;">
-				<line x1="${PopupDot.x}" y1="${PopupDot.y}" 
-					  x2="${LinkDot.x}" y2="${LinkDot.y}" 
-					  stroke="${colorBorder}" stroke-width="2" />
-			</svg>
-		`;
+		if (!LineSVG) return;
+		LineSVG.style.position = "fixed";
+		LineSVG.style.left = "0px";
+		LineSVG.style.top = "0px";
+		LineSVG.style.width = "100%";
+		LineSVG.style.height = "100%";
+		LineSVG.style.zIndex = 1000;
+		LineSVG.style.pointerEvents = "none";
+
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.style.overflow = "visible";
+		svg.style.width = "100%";
+		svg.style.height = "100%";
+		svg.style.position = "fixed";
+		svg.style.top = "0";
+		svg.style.left = "0";
+		svg.style.pointerEvents = "none";
+
+		const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		line.setAttribute("x1", PopupDot.x);
+		line.setAttribute("y1", PopupDot.y);
+		line.setAttribute("x2", LinkDot.x);
+		line.setAttribute("y2", LinkDot.y);
+		line.setAttribute("stroke", color["Border"]);
+		line.setAttribute("stroke-width", "2");
+
+		svg.appendChild(line);
+		LineSVG.innerHTML = "";
+		LineSVG.appendChild(svg);
 	}
 	function getPopupPos(event) {
 		const targetElement = event.target;
@@ -484,7 +504,7 @@
 			} else {
 				popup.style.top = posData.Py + "px";
 			}
-			// Immediate Diagnostic Line
+			// Calculate Line
 			const curTargetRect = (target.querySelector('img') || target).getBoundingClientRect();
 			const popupRect = popup.getBoundingClientRect();
 			const linkCenterX = curTargetRect.left + curTargetRect.width / 2;
@@ -492,9 +512,7 @@
 			let PopupDotX, PopupDotY;
 			if (posData.side === "top" || posData.side === "bottom") {
 				PopupDotX = Math.max(posData.Px, Math.min(linkCenterX, posData.Px + popupRect.width));
-				PopupDotY = posData.side === "top" ? (viewportH - parseFloat(popup.style.bottom)) - popupRect.height : posData.Py; // Side top uses bottom style
-				if (posData.side === "bottom") PopupDotY = posData.Py;
-				else if (posData.side === "top") PopupDotY = posData.Py_bottom - popupRect.height;
+				PopupDotY = posData.side === "bottom" ? posData.Py : posData.Py_bottom;
 			} else {
 				PopupDotY = Math.max(posData.Py, Math.min(linkCenterY, posData.Py + popupRect.height));
 				PopupDotX = posData.side === "left" ? posData.Px + popupRect.width : posData.Px;
@@ -515,7 +533,7 @@
 			autoScrollData("coverPreviewContentAutoScroll");
 		}
 	}
-	function tryToGetTextContent(element, query, queryName, targetDomain) {
+	function tryToGetTextContent(element, targetDomain) {
 		function tryToGetTextContentRecursive(element) {
 			function inside() {
 				return Array.from(element.childNodes).map(child => tryToGetTextContentRecursive(child)).join(' ');
@@ -527,7 +545,7 @@
 						return '<br>';
 					case 'a':
 						return '<a href="' + element.href.replace(/^file:\/\//, 'https://' + targetDomain) +
-							'" title="' + element.title + '"><span class="InlBloNoWrap">〘' +
+							'" title="' + element.title + '"><span class="InlineBlock">〘' +
 							inside().replace(/\s*#/g, '').trim() + '〙</span></a>';
 					case 'u':
 					case 'p':
@@ -553,8 +571,9 @@
 		let result = element;
 		if (result && result !== undefined) {
 			result = tryToGetTextContentRecursive(element);
-			result = result.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); //remove repeated whitespace
-			result = result.replace(/(〙<\/span><\/a>)\s(<a[^>].+><span class="InlBloNoWrap">〘)/g, '$1$2').trim(); //remove space between brackets
+			result = result.
+				replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().
+				replace(/(〙<\/span><\/a>)\s(<a[^>].+><span class="InlineBlock">〘)/g, '$1$2').trim();
 		}
 		return result;
 	}
@@ -639,11 +658,11 @@
 			cData.url = imageLink;
 		}
 		if (cData && cData.readyPromise) {
-			cData.readyPromise.then(() => {
-				GM_setCachedValue(elementUrl, cData);
+			cData.readyPromise.then(async () => {
+				await GM_setCachedValue(elementUrl, cData);
 			});
 		} else {
-			GM_setCachedValue(elementUrl, cData);
+			await GM_setCachedValue(elementUrl, cData);
 		}
 		return cData;
 	}
@@ -728,14 +747,14 @@
 		}
 		return rejectNotification;
 	}
-	function setLinkState(element, state = undefined, preloadUrlRequest = false) {
+	async function setLinkState(element, state = undefined, preloadUrlRequest = false) {
 		if (element) {
 			let hasText = element.textContent != "";
 			if (showIconNextToLink) {
 				const externalTarget = element.getAttribute("coverDataExternalTarget");
 				let elementUrl = getLinkToSeriesPage(element.href, externalTarget);
 				if (state === undefined) {
-					const coverData = GM_getCachedValue(elementUrl);
+					const coverData = await GM_getCachedValue(elementUrl);
 					if (
 						coverData === undefined ||
 						coverData === null ||
@@ -752,6 +771,8 @@
 					"loadingUrlPreload",
 					"loadingUrl",
 					"hasLoadedCoverPreviewPopup",
+					"errorUrl",
+					"errorUrlPreload",
 				);
 				switch (state) {
 					case linkIconEnum.popupPossibleNotLoadedOrMarkedForPreloading: //popup possible/no cover data preloaded; if preloadUrlRequest true set inactive preloading icon
@@ -770,6 +791,13 @@
 						if (hasText) element.classList.add("hasLoadedCoverPreviewPopup");
 						break;
 					case linkIconEnum.error:
+						if (hasText) {
+							if (preloadUrlRequest) {
+								element.classList.add("errorUrlPreload");
+							} else {
+								element.classList.add("errorUrl");
+							}
+						}
 						break;
 				}
 			} else {
@@ -778,19 +806,27 @@
 					"loadingUrlPreload",
 					"loadingUrl",
 					"hasLoadedCoverPreviewPopup",
+					"errorUrl",
+					"errorUrlPreload",
 				);
 			}
 		}
 	}
 	function syncLinksByCacheKey(cacheKey, state) {
 		if (!cacheKey) return;
+		if (state === linkIconEnum.error && cacheKey === activeHoverCacheKey) {
+			hidePopUp();
+		}
 		for (let i = 0; i < AllSeriesNodes.length; i++) {
 			const el = AllSeriesNodes[i];
 			if (el.getAttribute("data-cache-key") === cacheKey) {
 				setLinkState(el, state);
-				const nodeIndex = pendingPreloadNodes.indexOf(el);
-				if (nodeIndex !== -1) {
-					pendingPreloadNodes.splice(nodeIndex, 1);
+				const siteKey = el.getAttribute("coverDataExternalTarget");
+				if (siteKey && Preloads[siteKey]) {
+					const nodeIndex = Preloads[siteKey].PendingNodes.indexOf(el);
+					if (nodeIndex !== -1) {
+						Preloads[siteKey].PendingNodes.splice(nodeIndex, 1);
+					}
 				}
 			}
 		}
@@ -799,11 +835,10 @@
 		}
 	}
 	function getLinkToSeriesPage(elementUrl, individualPage = undefined) {
-		elementUrl = String(elementUrl);
-		elementUrl = elementUrl.replace(/^([a-zA-Z][a-zA-Z0-9+\-.]*:\/\/[^\/]*)/,
-			(_, schemeHost) => schemeHost.toLowerCase());
-		elementUrl = elementUrl.replace(/^https?:\/\/(m|www)\.webnovel\.com/, "https://webnovel.com");
-		elementUrl = elementUrl.replace(/^https?:\/\/(www\.)?royalroadl?\.com/, "https://royalroad.com");
+		elementUrl = String(elementUrl).
+			replace(/^https?:\/\/([^\/]+)/i, (_, host) => "https://" + host.toLowerCase()).
+			replace(/^https:\/\/(www|m)\./, "https://").
+			replace(/^https:\/\/royalroadl?\.com\//, "https://royalroad.com\/");
 		if (individualPage) {
 			const { ID, UrlPrefix } = getLinkID(elementUrl, individualPage);
 			if (typeof UrlPrefix === "string" && typeof ID === "string") {
@@ -826,7 +861,7 @@
 		const cacheKey = getLinkToSeriesPage(element.href, targetPage);
 		const rawNetworkUrl = element.href;
 		let coverData;
-		if (!forceReload) coverData = GM_getCachedValue(cacheKey);
+		if (!forceReload) coverData = await GM_getCachedValue(cacheKey);
 		let PromiseResult;
 		if (
 			!forceReload &&
@@ -846,11 +881,11 @@
 						if (newCoverData) {
 							newCoverData.updateStatus = "done";
 							if (newCoverData.readyPromise) {
-								newCoverData.readyPromise.then(() => {
-									GM_setCachedValue(cacheKey, newCoverData);
+								newCoverData.readyPromise.then(async () => {
+									await GM_setCachedValue(cacheKey, newCoverData);
 								});
 							} else {
-								GM_setCachedValue(cacheKey, newCoverData);
+								await GM_setCachedValue(cacheKey, newCoverData);
 							}
 							if (currentTitleHover === coverData.title || currentTitleHover === hoveredTitle || currentCoverData === coverData) {
 								currentCoverData = newCoverData;
@@ -878,12 +913,16 @@
 				}
 				if (cData && cData.title) {
 					cData.updateStatus = "done";
-					GM_setCachedValue(cacheKey, cData, undefined);
+					await GM_setCachedValue(cacheKey, cData);
 				}
 				return cData;
 			});
 		}
 		PromiseResult = await PromiseResult;
+		if (!PromiseResult || !PromiseResult.title) {
+			syncLinksByCacheKey(cacheKey, linkIconEnum.error);
+			throw new Error("No valid data found for " + cacheKey);
+		}
 		syncLinksByCacheKey(cacheKey, linkIconEnum.popupHasCoverData);
 		return PromiseResult;
 	}
@@ -912,61 +951,103 @@
 			rect.right < vWidth
 		);
 	}
-	function preloaderLoop() {
-		if (completedPreloads >= MaximumTotalPreloads || pendingPreloadNodes.length === 0) {
-			preloaderLoopTimeout = null;
+	function preloaderLoop(siteKey) {
+		const siteState = Preloads[siteKey];
+		if (!siteState) return;
+		if (
+			(!ignorePreloaderBudget &&
+				(siteState.Completed >= MaximumSitePreloads ||
+					Preloads["AllSites"].Completed >= MaximumTotalPreloads)) ||
+			siteState.PendingNodes.length === 0
+		) {
+			siteState.Timeout = null;
 			return;
 		}
-		if (completedPreloads + InProgressPreloads >= MaximumTotalPreloads) {
-			preloaderLoopTimeout = setTimeout(preloaderLoop, PreloadDelayMs);
+		if (
+			!ignorePreloaderBudget &&
+			(siteState.Completed + siteState.InProgress >= MaximumSitePreloads ||
+				Preloads["AllSites"].Completed + Preloads["AllSites"].InProgress >=
+				MaximumTotalPreloads)
+		) {
+			siteState.Timeout = setTimeout(preloaderLoop, PreloadDelayMs, siteKey);
 			return;
 		}
-		const visibleIndex = pendingPreloadNodes.findIndex(node => isElementInViewport(node));
+		const visibleIndex = siteState.PendingNodes.findIndex(node =>
+			isElementInViewport(node),
+		);
 		if (visibleIndex !== -1) {
-			const node = pendingPreloadNodes.splice(visibleIndex, 1)[0];
+			const node = siteState.PendingNodes.splice(visibleIndex, 1)[0];
 			const targetPage = node.getAttribute("coverDataExternalTarget");
-			InProgressPreloads++;
-			preloadForIndividualPage(node, targetPage);
+			siteState.InProgress++;
+			Preloads["AllSites"].InProgress++;
+			preloadForIndividualPage(node, targetPage, false, siteKey);
 		}
-		preloaderLoopTimeout = setTimeout(preloaderLoop, PreloadDelayMs);
+		siteState.Timeout = setTimeout(preloaderLoop, PreloadDelayMs, siteKey);
 	}
-	async function preloadForIndividualPage(element, targetPage, forceReload = false) {
+	async function preloadForIndividualPage(
+		element,
+		targetPage,
+		forceReload = false,
+		siteKey = undefined,
+	) {
 		if (!EnablePreloader && !showIconNextToLink && !forceReload) {
 			return;
 		}
 		const elementUrl = element.href;
 		const cacheKey = getLinkToSeriesPage(elementUrl, targetPage);
-		if (preloadedUrlSet.has(cacheKey)) {
-			if (!forceReload) {
-				InProgressPreloads--; // URL already handled, free the attempt slot
-				return;
+		if (preloadedUrlSet.has(cacheKey) && !forceReload) {
+			if (siteKey && Preloads[siteKey]) {
+				Preloads[siteKey].InProgress--;
 			}
+			Preloads["AllSites"].InProgress--;
+			return;
 		}
-		const coverData = GM_getCachedValue(cacheKey);
+		const coverData = await GM_getCachedValue(cacheKey);
 		if (coverData && !forceReload) {
 			syncLinksByCacheKey(cacheKey, linkIconEnum.popupHasCoverData);
-			InProgressPreloads--; // Already cached, free the slot
+			if (siteKey && Preloads[siteKey]) {
+				Preloads[siteKey].InProgress--;
+			}
+			Preloads["AllSites"].InProgress--;
 			return;
 		}
 		syncLinksByCacheKey(cacheKey, linkIconEnum.popupLoading);
 		parseSeriesPage(element, forceReload, undefined, undefined, targetPage)
 			.then(() => {
-				completedPreloads++;
-				InProgressPreloads--;
+				if (siteKey && Preloads[siteKey]) {
+					Preloads[siteKey].Completed++;
+					Preloads[siteKey].InProgress--;
+				}
+				Preloads["AllSites"].Completed++;
+				Preloads["AllSites"].InProgress--;
 			})
-			.catch((err) => {
-				InProgressPreloads--;
+			.catch((_) => {
+				if (siteKey && Preloads[siteKey]) {
+					Preloads[siteKey].InProgress--;
+				}
+				Preloads["AllSites"].InProgress--;
 			});
 	}
 	async function preloadCoverData(forceReload = false) {
 		if (!EnablePreloader && !showIconNextToLink && !forceReload) { return; }
 		AllSeriesNodes = [];
-		pendingPreloadNodes = [];
-		if (linkConfigs && linkConfigKeys.length > 0) {
-			for (let i = 0; i < linkConfigKeys.length; i++) {
-				const needsPreload = updateSeriesNodes(AllSeriesNodes, linkConfigKeys[i], forceReload, true);
-				pendingPreloadNodes.push(...needsPreload);
+		for (let i = 0; i < linkConfigKeys.length; i++) {
+			const siteKey = linkConfigKeys[i];
+			if (!Preloads[siteKey]) {
+				Preloads[siteKey] = {
+					PendingNodes: [],
+					Completed: 0,
+					InProgress: 0,
+					Timeout: null,
+				};
 			}
+			const needsPreload = await updateSeriesNodes(
+				AllSeriesNodes,
+				siteKey,
+				forceReload,
+				true,
+			);
+			Preloads[siteKey].PendingNodes.push(...needsPreload);
 		}
 		removeEventListenerFromNodes(AllSeriesNodes);
 		if (AllSeriesNodes.length > 0) {
@@ -976,24 +1057,31 @@
 					node.addEventListener("mouseleave", hideOnMouseLeave);
 				}
 			});
-			if (!preloaderLoopTimeout) {
-				preloaderLoop();
+			for (let i = 0; i < linkConfigKeys.length; i++) {
+				const siteKey = linkConfigKeys[i];
+				if (
+					Preloads[siteKey] &&
+					Preloads[siteKey].PendingNodes.length > 0 &&
+					!Preloads[siteKey].Timeout
+				) {
+					preloaderLoop(siteKey);
+				}
 			}
 		}
 	}
 	function addStyles() {
-		GM_addStyle(`
+		GM.addStyle(`
 			#popup * {
-				background-color: ${colorBackground};
+				background-color: ${color['Background']};
 			}
 			#popup .imp {
-				color: ${colorImportant};
+				color: ${color['Important']};
 			}
 			#popup a, #popup a *  {
-				color: ${colorLinks};
+				color: ${color['Link']};
 			}
 			#popup * {
-				color: ${colorForeground};
+				color: ${color['Text']};
 			}
 			@keyframes rotate {
 						to {transform: rotate(360deg);}
@@ -1020,13 +1108,16 @@
 				animation: dotsLoading 1s infinite;
 				animation-delay: 0.4s;
 			}
-			.loadingUrl, .loadingUrlPreload, .hasCoverPreviewPopup, .hasLoadedCoverPreviewPopup{
+			.loadingUrl, .loadingUrlPreload, .hasCoverPreviewPopup, .hasLoadedCoverPreviewPopup, .errorUrl, .errorUrlPreload{
 				padding:0 !important;
 				margin:0 !important;
 			}
-			.loadingUrl:link, .loadingUrlPreload:link, .hasCoverPreviewPopup:link, .hasLoadedCoverPreviewPopup:link{
+			.loadingUrl:link, .loadingUrlPreload:link, .hasCoverPreviewPopup:link, .hasLoadedCoverPreviewPopup:link, .errorUrl:link, .errorUrlPreload:link{
 				padding:0 !important;
 				margin:0 !important;
+			}
+			.errorUrl::before, .errorUrlPreload::before{
+				content:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="14" height="14" viewBox="0 0 24 24" stroke-width="2" stroke="red" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>');
 			}
 			.loadingUrl::before{
 				content:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-message-dots" width="14" height="14" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M0 0h24v24H0z" stroke="none" fill="none"/><path stroke="red" d="M4 21v-13a3 3 0 0 1 3 -3h10a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-9l-4 4" /><line x1="12" y1="11" x2="12" y2="11.01" stroke="red" fill="red" id="dotLoading1" /><line x1="8" y1="11" x2="8" y2="11.01" stroke="red" fill="red" id="dotLoading2" /><line x1="16" y1="11" x2="16" y2="11.01" stroke="red" fill="red" id="dotLoading3" /></svg>');
@@ -1058,7 +1149,7 @@
 					justify-items: center;
 					border: 0 !important;
 					border-bottom: 1px solid #000 !important;
-					border-radius:10px 10px 0 0 !important;
+					border-radius:0 !important;
 					line-height:1.4em;
 			}
 			.defaultTitleStyleSmall {
@@ -1087,7 +1178,7 @@
 					margin:2px;
 					padding:0;
 					position:unset;
-					border-radius: 10%;
+					border-radius: 0;
 			}
 			#coverPreviewAutoScroll#style-4::-webkit-scrollbar-track,#coverPreviewContentAutoScroll#style-4::-webkit-scrollbar-track
 			{
@@ -1122,7 +1213,7 @@
 				min-width: 0;
 				width: 100%;
 				border: 1px solid #000;
-				border-radius:10px 10px 5px 5px;
+				border-radius:0;
 				box-shadow: 0px 0px 5px #7A7A7A;
 				position:fixed;
 				z-index:1395;
@@ -1139,7 +1230,7 @@
 				opacity: 0 !important;
 			}
 			.ContentBorder{
-				border:2px solid ${colorBorder} !important;
+				border:2px solid ${color['Border']} !important;
 			}
 			.popupContent {
 				box-sizing: border-box;
@@ -1173,7 +1264,7 @@
 				height:100% !important;
 				width:auto !important;
 				max-width:65% !important;
-				border-radius: 10px 0 0 5px !important;
+				border-radius: 0 !important;
 				border:0 !important;
 				border-right: 1px solid #000 !important;
 				word-break: break-word;
@@ -1201,8 +1292,27 @@
 				border-top:1px solid#fff;
 				margin: 2px 0;
 			}
-			.InlBloNoWrap {
+			.InlineBlock {
 				display: inline-block;
+			}
+			.whiteSpaceNoWrap {
+				white-space: nowrap !important;
+			}
+			.flexColumn {
+				display: flex !important;
+				flex-direction: column !important;
+			}
+			.textAlignCenter {
+				text-align: center !important;
+			}
+			.textAlignStart {
+				text-align: start !important;
+			}
+			.fullWidth {
+				width: 100% !important;
+			}
+			.fullHeight {
+				height: 100% !important;
 			}
 			`);
 	}
@@ -1214,9 +1324,9 @@
 		popupContent = document.createElement("content");
 		popup.appendChild(popupTitle);
 		popup.appendChild(popupContent);
-		diagnosticContainer = document.createElement("div");
-		diagnosticContainer.id = "diagnostic_dots";
-		bodyElement.appendChild(diagnosticContainer);
+		LineSVG = document.createElement("div");
+		LineSVG.id = "diagnostic_dots";
+		bodyElement.appendChild(LineSVG);
 		popup.className = "defaultBackgroundStyle";
 		const popupResizeObserver = new ResizeObserver(() => {
 			if (popupVisible && currentPopupEvent && lastPopupTarget) {
@@ -1527,7 +1637,7 @@
 			completeDetails +=
 				'<span class="' +
 				smallTextStyle +
-				'" style="white-space: nowrap;"> [' +
+				' whiteSpaceNoWrap"> [' +
 				rating +
 				chapters +
 				seriesChapters +
@@ -1596,7 +1706,7 @@
 			completeDetails +=
 				'<span class="' +
 				mediumTextStyle +
-				'" style="height:100%;display:flex;flex-direction:column"><span class="coverDataTitle"><b>' +
+				' fullHeight flexColumn"><span class="coverDataTitle"><b>' +
 				titleToShow +
 				"</b>" +
 				alternativeNames +
@@ -1655,7 +1765,7 @@
 			});
 		}
 	}
-	function ajaxLoadImageUrlAndShowPopup(
+	async function ajaxLoadImageUrlAndShowPopup(
 		forceReload = false,
 		element,
 		hoveredTitle,
@@ -1663,32 +1773,30 @@
 		targetPage = undefined,
 	) {
 		const currentEvent = e;
-		return parseSeriesPage(
-			element,
-			forceReload,
-			hoveredTitle,
-			currentEvent,
-			targetPage,
-		).then(
-			function (coverData) {
-				if (coverData !== undefined) {
-					setCurrentCoverDataAndLoadImage(
-						coverData,
-						hoveredTitle,
-						currentEvent,
-					);
-				}
-			},
-			function (Error) {
-				syncLinksByCacheKey(getLinkToSeriesPage(element.href, targetPage), linkIconEnum.error);
-				showPopupLoading(
-					hoveredTitle,
+		try {
+			const coverData = await parseSeriesPage(
+				element,
+				forceReload,
+				hoveredTitle,
+				currentEvent,
+				targetPage,
+			);
+			if (coverData !== undefined) {
+				setCurrentCoverDataAndLoadImage(
+					coverData,
 					hoveredTitle,
 					currentEvent,
-					errorMessage,
 				);
-			},
-		);
+			}
+		} catch (Error) {
+			syncLinksByCacheKey(getLinkToSeriesPage(element.href, targetPage), linkIconEnum.error);
+			showPopupLoading(
+				hoveredTitle,
+				hoveredTitle,
+				currentEvent,
+				Error.message || Error.statusText || Error,
+			);
+		}
 	}
 	function imageLoaded(
 		coverData,
@@ -1751,7 +1859,7 @@
 			currentTitleHover == hoveredTitleLink;
 		if (!isActivePopup) return;
 		adjustPopupTitleDetail(coverData);
-		let metaHtml = '<div class="containerPadding" style="text-align: center;">';
+		let metaHtml = '<div class="containerPadding textAlignCenter">';
 		if (coverData.url) {
 			metaHtml += '<div><em>⏳ Loading cover image…</em></div>';
 		} else {
@@ -1771,7 +1879,7 @@
 		img.onload = () => {
 			imageLoaded(coverData, hoveredTitleLink, seriesTitle, e);
 		};
-		img.onerror = async (error) => {
+		img.onerror = async (_) => {
 			let imageCanBeLoaded = await checkImageServerState(coverData.url);
 			let errorMessage;
 			if (imageCanBeLoaded) {
@@ -1811,9 +1919,10 @@
 	}
 	function hidePopUp() {
 		lastPopupTarget = null; // Reset deduplication to allow re-hovering the same link
-		if (diagnosticContainer) {
-			diagnosticContainer.classList.add("hidePopUp");
-			diagnosticContainer.innerHTML = "";
+		activeHoverCacheKey = null;
+		if (LineSVG) {
+			LineSVG.classList.add("hidePopUp");
+			LineSVG.innerHTML = "";
 		}
 		popup.classList.add("hidePopUp");
 		currentTitleHover = undefined;
@@ -1826,14 +1935,14 @@
 	}
 	function showPopUp() {
 		popup.classList.remove("hidePopUp");
-		if (diagnosticContainer) diagnosticContainer.classList.remove("hidePopUp");
+		if (LineSVG) LineSVG.classList.remove("hidePopUp");
 		popupVisible = true;
 	}
 	function hideOnMouseLeave() {
 		if (isPopupFrozen) return;
 		hidePopUp();
 	}
-	function updateSeriesNodes(
+	async function updateSeriesNodes(
 		arrayTargetNode = [],
 		configKey,
 		forceReload = false,
@@ -1862,8 +1971,8 @@
 		});
 		let prunedSeriesLinkNodes = [];
 		if (seriesLinkNodes && seriesLinkNodes.length > 0) {
-			seriesLinkNodes.forEach(function (el) {
-				if (arrayTargetNode.includes(el)) return;
+			for (const el of seriesLinkNodes) {
+				if (arrayTargetNode.includes(el)) continue;
 				const elementUrl = el.href;
 				let hasLinkMatch = false;
 				const match = elementUrl.match(new RegExp(configKey, "i"));
@@ -1882,39 +1991,39 @@
 					const cacheKey = getLinkToSeriesPage(elementUrl, configKey);
 					el.setAttribute("data-cache-key", cacheKey);
 					arrayTargetNode.push(el);
-					const coverData = GM_getCachedValue(cacheKey);
+					const coverData = await GM_getCachedValue(cacheKey);
 					if (coverData && !forceReload) {
-						setLinkState(el, linkIconEnum.popupHasCoverData, false);
+						await setLinkState(el, linkIconEnum.popupHasCoverData, false);
 					} else {
-						setLinkState(el, undefined, forceReload || preloadUrlRequests);
+						await setLinkState(el, undefined, forceReload || preloadUrlRequests);
 						prunedSeriesLinkNodes.push(el);
 					}
 				}
-			});
+			}
 		}
 		return prunedSeriesLinkNodes;
 	}
-	function switchShowIconNextToLink() {
+	async function switchShowIconNextToLink() {
 		showIconNextToLink = !showIconNextToLink;
-		GM_setValue("showIconNextToLink", showIconNextToLink);
-		preloadCoverData();
+		await GM.setValue("showIconNextToLink", showIconNextToLink);
+		await preloadCoverData();
 		updateCurrentPopupContent();
 	}
-	function switchDetailsAndUpdatePopup() {
-		changeToNewDetailStyle();
+	async function switchDetailsAndUpdatePopup() {
+		await changeToNewDetailStyle();
 		updateCurrentPopupContent();
 		console.groupEnd("switchDetails");
 	}
-	function switchTagsDescriptionAndUpdatePopup() {
+	async function switchTagsDescriptionAndUpdatePopup() {
 		if (showDetails) {
 			showDescription = !showDescription;
-			GM_setValue("showDescription", showDescription);
+			await GM.setValue("showDescription", showDescription);
 			updateCurrentPopupContent();
 		}
 	}
-	function switchShowReadingListIconAndTitle() {
+	async function switchShowReadingListIconAndTitle() {
 		useReadingListIconAndTitle = !useReadingListIconAndTitle;
-		GM_setValue("useReadingListIconAndTitle", useReadingListIconAndTitle);
+		await GM.setValue("useReadingListIconAndTitle", useReadingListIconAndTitle);
 		updateCurrentPopupContent();
 	}
 	function updateCurrentPopupContent() {
@@ -1936,12 +2045,12 @@
 			refreshPopUp(dummyCoverData, currentPopupEvent);
 		}
 	}
-	function changeToNewDetailStyle(toggleDetails = true) {
+	async function changeToNewDetailStyle(toggleDetails = true) {
 		if (toggleDetails) showDetails = !showDetails;
-		GM_setValue("showDetails", showDetails);
+		await GM.setValue("showDetails", showDetails);
 		updatePopUpSize();
 	}
-	function mouseEnterPopup(e, forceReload = false) {
+	async function mouseEnterPopup(e, forceReload = false) {
 		if (isPopupFrozen) return;
 		if (e !== undefined) {
 			const target = e.target;
@@ -2006,7 +2115,8 @@
 				currentPopupEvent = e;
 				let targetPage = coverDataExternalTarget;
 				let mainSeriesHref = getLinkToSeriesPage(Href, targetPage);
-				let hasCoverData = GM_getCachedValue(mainSeriesHref);
+				activeHoverCacheKey = mainSeriesHref;
+				let hasCoverData = await GM_getCachedValue(mainSeriesHref);
 				if (!(hasCoverData && hasCoverData.title) || forceReload) {
 					syncLinksByCacheKey(mainSeriesHref, linkIconEnum.popupLoading);
 				}
@@ -2020,8 +2130,8 @@
 			}
 		}
 	}
-	function forceReload(forceReload = true) {
-		mouseEnterPopup(currentPopupEvent, forceReload);
+	async function forceReload(forceReload = true) {
+		await mouseEnterPopup(currentPopupEvent, forceReload);
 	}
 	function updatePopUpSize() {
 		let targetHeight = defaultHeight;
@@ -2071,7 +2181,7 @@
 				popupContent.innerHTML =
 					'<div id="coverPreviewContentAutoScroll" class="popupContent ' +
 					mediumTextStyle +
-					'" style="text-align:start !important; width:100%;"><b>Alternative Titles:</b><br />' +
+					' textAlignStart fullWidth"><b>Alternative Titles:</b><br />' +
 					alternativeNames +
 					"</div>";
 				if (currentCoverData !== undefined) popupPos(currentPopupEvent);
@@ -2091,15 +2201,14 @@
 			}
 		} else {
 			popupContent.innerHTML =
-				'<div id="coverPreviewContentAutoScroll" class="popupContent ' +
-				mediumTextStyle +
-				`" style="text-align:start !important">
+				`<div id="coverPreviewContentAutoScroll" class="popupContent ${mediumTextStyle} textAlignStart">
 				[Key ${Imp('1')}]: Switch detailed and simple popup<br />
 				[Key ${Imp('2')}]: Switch between description and tags<br />
 				[Key ${Imp('3')}]: Switch between small and big popup style<br />
-				[Key ${Imp('4')}]: Pause/unpause autoscrolling coverData<br/>
+				[Key ${Imp('4')}]: Pause/unpause auto-scrolling coverData<br/>
 				[Key ${Imp('5')}]: Reload cover data of hovered link<br />
-				[Key ${Imp('6')}]: Reload all links of current Page<br/>
+				[Key ${Imp('6')}]: Reload <b>all</b> links on current page (ignore network budget)<br />
+				[Key ${Imp('7')}]: Cache <b>all</b> non-cached links on current page (ignore network budget)<br />
 				[Key ${Imp('9')}]: Clear all cover data info<br />
 				[Key ${Imp('A')}]: If available will show <b>a</b>lternative titles during holding of key A<br />
 				[Key ${Imp('F')}]: <b>F</b>reeze/unfreeze popup style and prevent closing<br />
@@ -2111,28 +2220,30 @@
 			autoScrollData("coverPreviewContentAutoScroll");
 		}
 	}
-	function reactToKeyPressWhenPopupVisible(event) {
+	async function reactToKeyPressWhenPopupVisible(event) {
 		const key = event.key;
 		if (popupVisible) {
 			if (!pressedKeys.includes(key)) {
 				pressedKeys.push(key);
 				switch (key) {
 					case "1":
-						switchDetailsAndUpdatePopup();
+						await switchDetailsAndUpdatePopup();
 						break;
 					case "5":
-						forceReload();
+						await forceReload();
 						break;
 					case "6":
-						{
-							const _forceReload = true;
-							preloadCoverData(_forceReload);
-						}
+						ignorePreloaderBudget = true;
+						await preloadCoverData(true);
+						break;
+					case "7":
+						ignorePreloaderBudget = true;
+						await preloadCoverData(false);
 						break;
 					case "9":
-						resetDatabase();
-						preloadCoverData();
-						forceReload();
+						await resetDatabase();
+						await preloadCoverData();
+						await forceReload();
 						break;
 					case "f":
 					case "F":
@@ -2146,7 +2257,7 @@
 						}
 						break;
 					case "2":
-						switchTagsDescriptionAndUpdatePopup();
+						await switchTagsDescriptionAndUpdatePopup();
 						resetAutoScroll();
 						autoScrollCoverData = true;
 						autoScrollData();
@@ -2154,7 +2265,7 @@
 						break;
 					case "3":
 						showSmaller = !showSmaller;
-						GM_setValue("showSmaller", showSmaller);
+						await GM.setValue("showSmaller", showSmaller);
 						updatePopUpSize();
 						hasChangedStyle = true;
 						break;
@@ -2177,12 +2288,12 @@
 						break;
 					case "p":
 					case "P":
-						switchShowReadingListIconAndTitle();
+						await switchShowReadingListIconAndTitle();
 						updateCurrentPopupContent();
 						break;
 					case "i":
 					case "I":
-						switchShowIconNextToLink();
+						await switchShowIconNextToLink();
 						break;
 				}
 			}
@@ -2269,16 +2380,16 @@
 						return reject(false);
 				}
 			}
-			function onError(error) {
+			function onError(_) {
 				return reject(false);
 			}
-			GM_xmlhttpRequest({
+			GM.xmlHttpRequest({
 				method: "HEAD",
 				url: url,
 				onload: onLoad,
 				onerror: onError,
 			});
-			return "error or skipped processing GM_xmlhttpRequest() in checkImageServerState()"; //reject("status error")
+			return "error or skipped processing GM.xmlHttpRequest() in checkImageServerState()"; //reject("status error")
 		});
 		PromiseResult = await PromiseResult;
 		return PromiseResult;
@@ -2333,10 +2444,10 @@
 						return reject(rejectErrorStatusMessage(xhr));
 				}
 			}
-			function onError(error) {
+			function onError(_) {
 				return reject(false);
 			}
-			GM_xmlhttpRequest({
+			GM.xmlHttpRequest({
 				method: "GET",
 				responseType: responsetype,
 				url: apiPoint,
@@ -2367,7 +2478,7 @@
 				for (let tag of mangaDexData.attributes.tags) {
 					const name = tag.attributes.name.en || Object.values(tag.attributes.name)[0];
 					const tagUrl = "https://mangadex.org/tag/" + tag.id + "/";
-					const tagLink = '<a href="' + tagUrl + '" title="' + name + '"><span class="InlBloNoWrap">〘' + name + '〙</span></a>';
+					const tagLink = '<a href="' + tagUrl + '" title="' + name + '"><span class="InlineBlock">〘' + name + '〙</span></a>';
 					if (tag.attributes.group === "genre") seriesGenre.push(tagLink);
 					else if (tag.attributes.group === "theme") seriesTags.push(tagLink);
 				}
@@ -2456,7 +2567,7 @@
 				const genreId = tvMazeGenreMap[g];
 				if (genreId !== undefined) {
 					const url = "https://www.tvmaze.com/shows?Show%5Bgenre%5D=" + genreId + "&Show%5Bsort%5D=7";
-					return '<a href="' + url + '" title="' + g + '"><span class="InlBloNoWrap">〘' + g + '〙</span></a>';
+					return '<a href="' + url + '" title="' + g + '"><span class="InlineBlock">〘' + g + '〙</span></a>';
 				}
 				return g;
 			}).join("") : "";
@@ -2484,6 +2595,82 @@
 		}
 		return undefined;
 	}
+	function extractCoverDataFromDocument(
+		domDocument,
+		targetPage,
+		targetDomain = undefined,
+	) {
+		let temp;
+		let imageLink;
+		let containerNumber = 0;
+		let seriesTitle;
+		let seriesAlternativeNames;
+		let seriesVotes;
+		let seriesStatus;
+		let seriesChapters;
+		let seriesGenre;
+		let seriesShowTags;
+		let seriesDescription;
+		let seriesReadingListIcon, seriesReadingListTitle;
+		temp = domDocument.querySelectorAll(targetPage.seriesImage);
+		if (targetPage.CONTAINER_NUMBER) {
+			containerNumber = targetPage.CONTAINER_NUMBER;
+		}
+		imageLink = temp[containerNumber];
+		seriesTitle = domDocument.querySelector(targetPage.seriesPageTitle);
+		seriesAlternativeNames = domDocument.querySelector(
+			targetPage.seriesAlternativeNames,
+		);
+		seriesVotes = domDocument.querySelector(targetPage.seriesPageVotes);
+		seriesStatus = domDocument.querySelector(targetPage.seriesPageStatus);
+		seriesChapters = domDocument.querySelector(targetPage.seriesPageChapters);
+		seriesGenre = domDocument.querySelector(targetPage.seriesPageGenre);
+		seriesShowTags = domDocument.querySelector(targetPage.seriesPageTags);
+		seriesDescription = domDocument.querySelector(
+			targetPage.seriesPageDescription,
+		);
+		seriesReadingListIcon = domDocument.querySelector(
+			targetPage.seriesReadingListIcon,
+		);
+		seriesReadingListTitle = domDocument.querySelector(
+			targetPage.seriesReadingListTitle,
+		);
+		let cData = Object.assign({}, emptyCoverData);
+		if (imageLink) {
+			cData.url = imageLink.getAttribute("data-src") || imageLink.getAttribute("src") || imageLink.getAttribute("href") || undefined;
+			if (!cData.url) cData.url = imageLink.src || imageLink.href;
+		} else {
+			cData.url = undefined;
+		}
+		try { cData.title = tryToGetTextContent(seriesTitle, targetDomain); } catch (e) { cData.title = "Error loading title"; }
+		try { cData.alternativeNames = tryToGetTextContent(seriesAlternativeNames, targetDomain); } catch (e) { cData.alternativeNames = ""; }
+		try { cData.description = tryToGetTextContent(seriesDescription, targetDomain); } catch (e) { cData.description = "Error loading description"; }
+		try { cData.genre = tryToGetTextContent(seriesGenre, targetDomain); } catch (e) { cData.genre = "Error loading genres"; }
+		try { cData.Tags = tryToGetTextContent(seriesShowTags, targetDomain); } catch (e) { cData.Tags = "Error loading tags"; }
+		try { cData.votes = tryToGetTextContent(seriesVotes, targetDomain); } catch (e) { cData.votes = ""; }
+		try {
+			let PossibleChapters = tryToGetTextContent(seriesChapters, targetPage.seriesPageChapters, "seriesPageChapters", targetDomain);
+			if ((new RegExp('(Chapter|Episode|\\d+)')).test(PossibleChapters)) {
+				cData.chapters = PossibleChapters;
+			} else {
+				cData.chapters = '';
+			}
+		} catch (e) { cData.chapters = ""; }
+		try { cData.status = tryToGetTextContent(seriesStatus, targetDomain); } catch (e) { cData.status = ""; }
+		try { cData.readingListTitle = tryToGetTextContent(seriesReadingListTitle, targetDomain); } catch (e) { cData.readingListTitle = ""; }
+		if (targetPage.seriesReadingListIcon) {
+			if (seriesReadingListIcon !== null && seriesReadingListIcon.tagName == "IMG") {
+				cData.readingListIcon = seriesReadingListIcon.getAttribute("src");
+				cData.readingListIcon = processRelativeImageLink(cData.readingListIcon, targetDomain);
+			}
+			if (cData.readingListIcon === null || cData.readingListIcon == "//novelupdates.com/wp-content/themes/ndupdates-child/js/selectico/addme.png") {
+				cData.readingListIcon = undefined;
+			}
+		}
+		cData.readyPromise = Promise.resolve();
+		if (currentCoverData === cData && popupVisible) updateCurrentPopupContent();
+		return cData;
+	}
 	async function getCoverDataFromParsingTargetUrl(
 		elementUrl,
 		targetPage,
@@ -2495,86 +2682,37 @@
 			let domDocument = await getDataFromAPI(elementUrl, {
 				responsetype: "text",
 			});
-			let temp;
-			let imageLink;
-			let containerNumber = 0;
-			let seriesTitle;
-			let seriesAlternativeNames;
-			let seriesVotes;
-			let seriesStatus;
-			let seriesChapters;
-			let seriesGenre;
-			let seriesShowTags;
-			let seriesDescription;
-			let seriesReadingListIcon, seriesReadingListTitle;
-			temp = domDocument.querySelectorAll(targetPage.seriesImage);
-			if (targetPage.CONTAINER_NUMBER) {
-				containerNumber = targetPage.CONTAINER_NUMBER;
-			}
-			imageLink = temp[containerNumber];
-			seriesTitle = domDocument.querySelector(targetPage.seriesPageTitle);
-			seriesAlternativeNames = domDocument.querySelector(
-				targetPage.seriesAlternativeNames,
-			);
-			seriesVotes = domDocument.querySelector(targetPage.seriesPageVotes);
-			seriesStatus = domDocument.querySelector(targetPage.seriesPageStatus);
-			seriesChapters = domDocument.querySelector(targetPage.seriesPageChapters);
-			seriesGenre = domDocument.querySelector(targetPage.seriesPageGenre);
-			seriesShowTags = domDocument.querySelector(targetPage.seriesPageTags);
-			seriesDescription = domDocument.querySelector(
-				targetPage.seriesPageDescription,
-			);
-			seriesReadingListIcon = domDocument.querySelector(
-				targetPage.seriesReadingListIcon,
-			);
-			seriesReadingListTitle = domDocument.querySelector(
-				targetPage.seriesReadingListTitle,
-			);
-			let cData = Object.assign({}, emptyCoverData);
-			if (imageLink) {
-				cData.url = imageLink.getAttribute("data-src") || imageLink.getAttribute("src") || imageLink.getAttribute("href") || undefined;
-				if (!cData.url) cData.url = imageLink.src || imageLink.href;
-			} else {
-				cData.url = undefined;
-			}
-			try { cData.title = tryToGetTextContent(seriesTitle, targetPage.seriesPageTitle, "seriesPageTitle", targetDomain); } catch (e) { cData.title = "Error loading title"; }
-			try { cData.alternativeNames = tryToGetTextContent(seriesAlternativeNames, targetPage.seriesAlternativeNames, "seriesAlternativeNames", targetDomain); } catch (e) { cData.alternativeNames = ""; }
-			try { cData.description = tryToGetTextContent(seriesDescription, targetPage.seriesPageDescription, "seriesPageDescription", targetDomain); } catch (e) { cData.description = "Error loading description"; }
-			try { cData.genre = tryToGetTextContent(seriesGenre, targetPage.seriesPageGenre, "seriesPageGenre", targetDomain); } catch (e) { cData.genre = "Error loading genres"; }
-			try { cData.Tags = tryToGetTextContent(seriesShowTags, targetPage.seriesPageTags, "seriesPageTags", targetDomain); } catch (e) { cData.Tags = "Error loading tags"; }
-			try { cData.votes = tryToGetTextContent(seriesVotes, targetPage.seriesPageVotes, "seriesPageVotes", targetDomain); } catch (e) { cData.votes = ""; }
-			try {
-				let PossibleChapters = tryToGetTextContent(seriesChapters, targetPage.seriesPageChapters, "seriesPageChapters", targetDomain);
-				if ((new RegExp('(Chapter|Episode|\\d+)')).test(PossibleChapters)) {
-					cData.chapters = PossibleChapters;
-				} else {
-					cData.chapters = '';
-				}
-			} catch (e) { cData.chapters = ""; }
-			try { cData.status = tryToGetTextContent(seriesStatus, targetPage.seriesPageStatus, "seriesPageStatus", targetDomain); } catch (e) { cData.status = ""; }
-			try { cData.readingListTitle = tryToGetTextContent(seriesReadingListTitle, targetPage.seriesReadingListTitle, "seriesReadingListTitle", targetDomain); } catch (e) { cData.readingListTitle = ""; }
-			if (targetPage.seriesReadingListIcon) {
-				if (seriesReadingListIcon !== null && seriesReadingListIcon.tagName == "IMG") {
-					cData.readingListIcon = seriesReadingListIcon.getAttribute("src");
-					cData.readingListIcon = processRelativeImageLink(cData.readingListIcon, targetDomain);
-				}
-				if (cData.readingListIcon === null || cData.readingListIcon == "//novelupdates.com/wp-content/themes/ndupdates-child/js/selectico/addme.png") {
-					cData.readingListIcon = undefined;
-				}
-			}
-			cData.readyPromise = Promise.resolve();
-			if (currentCoverData === cData && popupVisible) updateCurrentPopupContent();
+			const cData = extractCoverDataFromDocument(domDocument, targetPage, targetDomain);
+			if (!isCoverDataValid(cData)) return undefined;
 			return cData;
 		}
 		return undefined;
 	}
-	function main() {
-		checkDataVersion();
-		showDetails = GM_getValue("showDetails");
-		showDescription = GM_getValue("showDescription");
-		showSmaller = GM_getValue("showSmaller");
-		useReadingListIconAndTitle = GM_getValue("useReadingListIconAndTitle");
-		showIconNextToLink = GM_getValue("showIconNextToLink");
+	async function cacheCurrentPage() {
+		const currentUrl = window.location.href;
+		for (const key in linkConfigs) {
+			const config = linkConfigs[key];
+			if (new RegExp(key, "i").test(currentUrl)) {
+				const targetDomain = getTargetDomain(key);
+				if (config.mainAPI) {
+					await getCoverDataFromUrl(currentUrl, key);
+				} else {
+					const cData = extractCoverDataFromDocument(document, config, targetDomain);
+					if (cData && isCoverDataValid(cData)) {
+						await GM_setCachedValue(currentUrl, cData);
+					}
+				}
+				break;
+			}
+		}
+	}
+	async function main() {
+		await checkDataVersion();
+		showDetails = await GM.getValue("showDetails");
+		showDescription = await GM.getValue("showDescription");
+		showSmaller = await GM.getValue("showSmaller");
+		useReadingListIconAndTitle = await GM.getValue("useReadingListIconAndTitle");
+		showIconNextToLink = await GM.getValue("showIconNextToLink");
 		if (showDetails === undefined || showDetails == "undefined") {
 			showDetails = true;
 		}
@@ -2596,7 +2734,8 @@
 		addStyles();
 		createPopUp();
 		changeToNewDetailStyle(false);
-		preloadCoverData();
+		await preloadCoverData();
 		prepareEventListener();
+		await cacheCurrentPage();
 	}
 })();

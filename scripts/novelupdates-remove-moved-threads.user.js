@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Novel Updates Remove Moved Threads
-// @namespace    https://github.com/nazgand/userscripts
-// @version      0.1
+// @namespace    Https://GitHub.Com/Nazgand/UserScripts
+// @version      1
 // @description  Remove Moved Threads
 // @author       Nazgand
-// @match        http://forum.novelupdates.com/forums/*
+// @include     /^https?:\/\/(.*\.)?novelupdatesforum\.com/*
 // @grant        none
 // ==/UserScript==
 document.querySelectorAll('i.fa.fa-share').forEach(function(redirect) {
